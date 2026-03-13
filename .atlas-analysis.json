@@ -1,0 +1,151 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Magicyan",
+  "projectDescription": "A collection of TypeScript utility libraries for Discord bot development and general-purpose tasks",
+  "theme": "palm",
+  "primaryColor": "#7c7c7c",
+  "lightColor": "#070707",
+  "darkColor": "#c4c4c4",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core",
+            "pages": [
+              "core/overview",
+              "core/conversion",
+              "core/formatting",
+              "core/math",
+              "core/timers",
+              "core/validation",
+              "core/date"
+            ]
+          },
+          {
+            "group": "Discord",
+            "pages": [
+              "discord/overview",
+              "discord/commands",
+              "discord/channels",
+              "discord/members",
+              "discord/roles",
+              "discord/emojis",
+              "discord/webhooks",
+              "discord/embeds",
+              "discord/components"
+            ]
+          },
+          {
+            "group": "Discord Events",
+            "pages": [
+              "discord-events/overview",
+              "discord-events/extended-events"
+            ]
+          },
+          {
+            "group": "Discord UI",
+            "pages": [
+              "discord-ui/overview",
+              "discord-ui/components"
+            ]
+          },
+          {
+            "group": "Canvas",
+            "pages": [
+              "canvas/overview",
+              "canvas/gradients",
+              "canvas/filters",
+              "canvas/fonts"
+            ]
+          },
+          {
+            "group": "Minecraft",
+            "pages": [
+              "minecraft/overview",
+              "minecraft/skins",
+              "minecraft/mojang-api",
+              "minecraft/server-status"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core API",
+            "pages": [
+              "api/core/check",
+              "api/core/convert",
+              "api/core/format",
+              "api/core/math",
+              "api/core/ms",
+              "api/core/timers",
+              "api/core/validation",
+              "api/core/date",
+              "api/core/sleep"
+            ]
+          },
+          {
+            "group": "Discord API",
+            "pages": [
+              "api/discord/channels",
+              "api/discord/commands",
+              "api/discord/emojis",
+              "api/discord/members",
+              "api/discord/message",
+              "api/discord/roles",
+              "api/discord/webhooks",
+              "api/discord/components",
+              "api/discord/embeds",
+              "api/discord/guards"
+            ]
+          },
+          {
+            "group": "Canvas API",
+            "pages": [
+              "api/canvas/font",
+              "api/canvas/gradient",
+              "api/canvas/filters"
+            ]
+          },
+          {
+            "group": "Minecraft API",
+            "pages": [
+              "api/minecraft/skins",
+              "api/minecraft/mojang",
+              "api/minecraft/mush",
+              "api/minecraft/server"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "TypeScript utilities for Discord.js bot development",
+    "Extended Discord events and UI components",
+    "Canvas manipulation with gradients and filters",
+    "Minecraft API integrations (skins, server status, Mojang API)",
+    "General-purpose utilities (date, validation, formatting, math)",
+    "Monorepo architecture with modular packages"
+  ],
+  "publicApiSurface": [
+    "@magicyan/core - hexToRgb, rgbToHex, formatDate, isValidUrl, sleep, withTimeout",
+    "@magicyan/discord - findCommand, commandMention, createEmbed, createButton, createModal",
+    "@magicyan/discord-events - Extended event handlers for Discord.js",
+    "@magicyan/discord-ui - UI components for Discord messages",
+    "@magicyan/canvas - Font class, createGradient, applyFilters",
+    "@magicyan/minecraft - fetchSkin, fetchServerStatus, mojangAPI"
+  ]
+}
