@@ -1,0 +1,507 @@
+---
+title: Font API Reference
+description: Complete API reference for the CanvasContextFont class and font types
+---
+
+# Font API Reference
+
+The `@magicyan/canvas` package provides the `CanvasContextFont` class for managing font properties on canvas contexts with a fluent, chainable API.
+
+## CanvasContextFont Class
+
+### Constructor
+
+```typescript
+new CanvasContextFont(
+  context: SKRSContext2D,
+  props?: Partial<CanvasContextFontProps>
+)
+```
+
+Creates a new font manager instance that wraps a canvas 2D context.
+
+<ParamField path="context" type="SKRSContext2D" required>
+  The canvas 2D context from `@napi-rs/canvas` to manage.
+</ParamField>
+
+<ParamField path="props" type="Partial<CanvasContextFontProps>">
+  Optional initial font properties to apply immediately.
+</ParamField>
+
+**Example:**
+```typescript
+import { createCanvas } from "@napi-rs/canvas";
+import { CanvasContextFont } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 24,
+  weight: "bold",
+  align: "center"
+});
+```
+
+---
+
+## Methods
+
+### set()
+
+```typescript
+set(props: CanvasContextFontProps): this
+```
+
+Update multiple font properties at once. All properties are optional.
+
+<ParamField path="props" type="CanvasContextFontProps" required>
+  An object containing the font properties to update:
+  
+  - `family?: string` - Font family name
+  - `size?: number` - Font size in pixels
+  - `style?: StrOr<ContextFontStyle>` - Font style (italic, underline, etc.)
+  - `weight?: StrOr<ContextFontWeight>` - Font weight (bold, 600, etc.)
+  - `align?: CanvasTextAlign` - Text alignment (left, center, right, etc.)
+  - `baseline?: CanvasTextBaseline` - Text baseline (top, middle, bottom, etc.)
+  - `kerning?: CanvasFontKerning` - Font kerning (auto, normal, none)
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.set({
+  family: "Helvetica",
+  size: 32,
+  weight: "bold",
+  align: "center",
+  baseline: "middle"
+});
+```
+
+---
+
+### setFamily()
+
+```typescript
+setFamily(family: string): this
+```
+
+Set the font family.
+
+<ParamField path="family" type="string" required>
+  The font family name (e.g., "Arial", "Helvetica", "Comic Sans MS").
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.setFamily("Arial");
+```
+
+---
+
+### setSize()
+
+```typescript
+setSize(size: number): this
+```
+
+Set the font size in pixels.
+
+<ParamField path="size" type="number" required>
+  The font size in pixels.
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.setSize(48);
+```
+
+---
+
+### setStyle()
+
+```typescript
+setStyle(style: StrOr<ContextFontStyle>): this
+```
+
+Set the font style.
+
+<ParamField path="style" type="StrOr<ContextFontStyle>" required>
+  The font style. Accepts any string or these specific values:
+  - `"italic"`
+  - `"italic underline"`
+  - `"italic strikethrough"`
+  - `"italic strikethrough underline"`
+  - `"strikethrough"`
+  - `"strikethrough underline"`
+  - `"underline"`
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.setStyle("italic");
+font.setStyle("italic underline");
+```
+
+---
+
+### setWeight()
+
+```typescript
+setWeight(weight: StrOr<ContextFontWeight>): this
+```
+
+Set the font weight.
+
+<ParamField path="weight" type="StrOr<ContextFontWeight>" required>
+  The font weight. Accepts any string or these specific values:
+  
+  **Named weights:** `"thin"`, `"extralight"`, `"light"`, `"regular"`, `"medium"`, `"semibold"`, `"bold"`, `"extrabold"`, `"black"`
+  
+  **Numeric weights:** `"100"`, `"200"`, `"300"`, `"400"`, `"500"`, `"600"`, `"700"`, `"800"`, `"900"`
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.setWeight("bold");
+font.setWeight("600");
+```
+
+---
+
+### setAlign()
+
+```typescript
+setAlign(align: CanvasTextAlign): this
+```
+
+Set the text alignment.
+
+<ParamField path="align" type="CanvasTextAlign" required>
+  The text alignment: `"start"`, `"end"`, `"left"`, `"right"`, or `"center"`.
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.setAlign("center");
+```
+
+---
+
+### setBaseline()
+
+```typescript
+setBaseline(baseline: CanvasTextBaseline): this
+```
+
+Set the text baseline.
+
+<ParamField path="baseline" type="CanvasTextBaseline" required>
+  The text baseline: `"top"`, `"hanging"`, `"middle"`, `"alphabetic"`, `"ideographic"`, or `"bottom"`.
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.setBaseline("middle");
+```
+
+---
+
+### setKerning()
+
+```typescript
+setKerning(kerning: CanvasFontKerning): this
+```
+
+Set the font kerning.
+
+<ParamField path="kerning" type="CanvasFontKerning" required>
+  The font kerning mode: `"auto"`, `"normal"`, or `"none"`.
+</ParamField>
+
+<ResponseField name="returns" type="this">
+  Returns the font instance for method chaining.
+</ResponseField>
+
+**Example:**
+```typescript
+font.setKerning("normal");
+```
+
+---
+
+## Properties (Getters)
+
+### family
+
+```typescript
+get family(): string
+```
+
+<ResponseField name="family" type="string">
+  Returns the current font family.
+</ResponseField>
+
+**Example:**
+```typescript
+console.log(font.family); // "Arial"
+```
+
+---
+
+### style
+
+```typescript
+get style(): string | undefined
+```
+
+<ResponseField name="style" type="string | undefined">
+  Returns the current font style, or `undefined` if not set.
+</ResponseField>
+
+**Example:**
+```typescript
+console.log(font.style); // "italic"
+```
+
+---
+
+### weight
+
+```typescript
+get weight(): string | undefined
+```
+
+<ResponseField name="weight" type="string | undefined">
+  Returns the current font weight, or `undefined` if not set.
+</ResponseField>
+
+**Example:**
+```typescript
+console.log(font.weight); // "bold"
+```
+
+---
+
+### size
+
+```typescript
+get size(): number
+```
+
+<ResponseField name="size" type="number">
+  Returns the current font size in pixels. Default is 12.
+</ResponseField>
+
+**Example:**
+```typescript
+console.log(font.size); // 24
+```
+
+---
+
+### align
+
+```typescript
+get align(): CanvasTextAlign
+```
+
+<ResponseField name="align" type="CanvasTextAlign">
+  Returns the current text alignment. Default is `"start"`.
+</ResponseField>
+
+**Example:**
+```typescript
+console.log(font.align); // "center"
+```
+
+---
+
+### baseline
+
+```typescript
+get baseline(): CanvasTextBaseline
+```
+
+<ResponseField name="baseline" type="CanvasTextBaseline">
+  Returns the current text baseline. Default is `"top"`.
+</ResponseField>
+
+**Example:**
+```typescript
+console.log(font.baseline); // "middle"
+```
+
+---
+
+### kerning
+
+```typescript
+get kerning(): CanvasFontKerning
+```
+
+<ResponseField name="kerning" type="CanvasFontKerning">
+  Returns the current font kerning mode. Default is `"auto"`.
+</ResponseField>
+
+**Example:**
+```typescript
+console.log(font.kerning); // "normal"
+```
+
+---
+
+## Type Definitions
+
+### CanvasContextFontProps
+
+```typescript
+interface CanvasContextFontProps {
+  family?: string;
+  style?: StrOr<ContextFontStyle>;
+  weight?: StrOr<ContextFontWeight>;
+  size?: number;
+  align?: CanvasTextAlign;
+  baseline?: CanvasTextBaseline;
+  kerning?: CanvasFontKerning;
+}
+```
+
+Interface for font properties used in the constructor and `set()` method.
+
+---
+
+### ContextFontWeight
+
+```typescript
+type ContextFontWeight = 
+  | "thin" | "extralight" | "light" | "regular" 
+  | "medium" | "semibold" | "bold" | "extrabold" | "black"
+  | "100" | "200" | "300" | "400" | "500" 
+  | "600" | "700" | "800" | "900";
+```
+
+Type-safe font weight values, including both named and numeric weights.
+
+---
+
+### ContextFontStyle
+
+```typescript
+type ContextFontStyle = 
+  | "italic" 
+  | "italic underline" 
+  | "italic strikethrough"
+  | "italic strikethrough underline"
+  | "strikethrough" 
+  | "strikethrough underline"
+  | "underline";
+```
+
+Type-safe font style values for text decoration.
+
+---
+
+### StrOr\<T\>
+
+```typescript
+type StrOr<Completions> = (string & {}) | Completions;
+```
+
+Utility type that provides autocomplete suggestions while still accepting any string value.
+
+---
+
+## Usage Examples
+
+### Method Chaining
+
+```typescript
+const font = new CanvasContextFont(ctx);
+
+font
+  .setFamily("Arial")
+  .setSize(32)
+  .setWeight("bold")
+  .setAlign("center")
+  .setBaseline("middle");
+
+ctx.fillText("Hello World", 400, 300);
+```
+
+### Accessing Properties
+
+```typescript
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 24,
+  weight: "bold"
+});
+
+console.log(`Font: ${font.family} ${font.size}px`);
+console.log(`Weight: ${font.weight}`);
+console.log(`Alignment: ${font.align}`);
+```
+
+### Reusing Font Configurations
+
+```typescript
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  align: "center",
+  baseline: "middle"
+});
+
+// Title
+font.setSize(48).setWeight("bold");
+ctx.fillText("Title", 400, 100);
+
+// Subtitle
+font.setSize(24).setWeight("regular");
+ctx.fillText("Subtitle", 400, 150);
+```
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Font Guide" icon="font" href="/canvas/fonts">
+    Complete guide with examples and best practices
+  </Card>
+  <Card title="Gradient API" icon="palette" href="/api/canvas/gradient">
+    Create gradient fills for text
+  </Card>
+  <Card title="Filter API" icon="wand-magic-sparkles" href="/api/canvas/filters">
+    Apply effects to text rendering
+  </Card>
+</CardGroup>

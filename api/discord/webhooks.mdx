@@ -1,0 +1,123 @@
+---
+title: Webhooks
+description: API reference for webhook-related functions in @magicyan/discord
+---
+
+## createWebhookClient
+
+Create a webhook client from a URL or webhook data.
+
+```typescript
+function createWebhookClient(
+  url: string,
+  options?: WebhookClientOptions
+): WebhookClient | null
+
+function createWebhookClient(
+  data: WebhookClientData,
+  options?: WebhookClientOptions
+): WebhookClient | null
+```
+
+<ParamField path="url" type="string" required>
+  A Discord webhook URL (overload 1)
+</ParamField>
+
+<ParamField path="data" type="WebhookClientData" required>
+  Webhook client data containing `id` and `token` (overload 2)
+</ParamField>
+
+<ParamField path="options" type="WebhookClientOptions">
+  Optional configuration for the webhook client
+</ParamField>
+
+<ResponseField name="return" type="WebhookClient | null">
+  A configured `WebhookClient` instance, or `null` if the webhook data is invalid
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createWebhookClient } from "@magicyan/discord";
+
+// Create from URL
+const webhookUrl = "https://discord.com/api/webhooks/123/abc";
+const webhook = createWebhookClient(webhookUrl);
+
+if (webhook) {
+  await webhook.send({
+    content: "Hello from webhook!",
+    username: "Custom Bot Name",
+    avatarURL: "https://example.com/avatar.png"
+  });
+}
+
+// Create from data
+const webhookData = {
+  id: "123456789",
+  token: "webhook_token_here"
+};
+const webhook2 = createWebhookClient(webhookData);
+
+// With options
+const webhook3 = createWebhookClient(webhookUrl, {
+  allowedMentions: {
+    parse: ["users"]
+  }
+});
+
+// Handle invalid webhooks
+const invalid = createWebhookClient("invalid-url");
+if (!invalid) {
+  console.log("Failed to create webhook client");
+}
+
+// Send embeds via webhook
+if (webhook) {
+  await webhook.send({
+    embeds: [{
+      title: "Notification",
+      description: "This is a webhook embed",
+      color: 0x00FF00
+    }]
+  });
+}
+
+// Send with files
+if (webhook) {
+  await webhook.send({
+    content: "Check out this file!",
+    files: [{
+      attachment: "./image.png",
+      name: "image.png"
+    }]
+  });
+}
+```
+
+### Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Logging" icon="file-lines">
+    Send automated logs to a dedicated channel via webhook
+  </Card>
+  <Card title="Notifications" icon="bell">
+    Trigger external notifications without a full bot connection
+  </Card>
+  <Card title="Integration" icon="link">
+    Connect external services to Discord channels
+  </Card>
+  <Card title="Announcements" icon="bullhorn">
+    Post announcements from scripts or scheduled tasks
+  </Card>
+</CardGroup>
+
+### Notes
+
+<Note>
+  This function safely handles invalid webhook URLs or data by returning `null` instead of throwing an error, making it safe to use without try-catch blocks.
+</Note>
+
+<Warning>
+  Never expose webhook URLs or tokens publicly. Anyone with access to a webhook URL can send messages to your channel.
+</Warning>

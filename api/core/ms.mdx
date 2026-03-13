@@ -1,0 +1,163 @@
+---
+title: 'Time Unit Conversion (toMs)'
+description: 'Convert time units to milliseconds'
+---
+
+## toMs
+
+Converts a numeric value from a specified time unit into milliseconds. This function is enhanced with additional methods for specific time units.
+
+```typescript
+function toMs(value: number, unit?: TimeUnit): number
+
+interface toMs {
+  (value: number, unit?: TimeUnit): number;
+  seconds(value: number): number;
+  minutes(value: number): number;
+  hours(value: number): number;
+  days(value: number): number;
+}
+```
+
+<ParamField path="value" type="number" required>
+  The numeric value to convert.
+</ParamField>
+
+<ParamField path="unit" type="TimeUnit" default="seconds">
+  The unit of time for the value. Can be `"seconds"`, `"minutes"`, `"hours"`, or `"days"`.
+  
+  Type: `TimeUnit = "seconds" | "minutes" | "hours" | "days"`
+</ParamField>
+
+<ResponseField name="result" type="number">
+  The equivalent time in milliseconds.
+</ResponseField>
+
+### Basic Usage
+
+```typescript
+import { toMs } from "@magicyan/core";
+
+toMs(5, "seconds");
+// Returns: 5000
+
+toMs(2, "minutes");
+// Returns: 120000
+
+toMs(1.5, "hours");
+// Returns: 5400000
+
+toMs(1, "days");
+// Returns: 86400000
+
+toMs(30); // Defaults to seconds
+// Returns: 30000
+```
+
+---
+
+## toMs.seconds
+
+Converts seconds to milliseconds.
+
+```typescript
+toMs.seconds(value: number): number
+```
+
+<ParamField path="value" type="number" required>
+  The number of seconds to convert.
+</ParamField>
+
+<ResponseField name="result" type="number">
+  The equivalent time in milliseconds.
+</ResponseField>
+
+### Example
+
+```typescript
+import { toMs } from "@magicyan/core";
+
+toMs.seconds(5);
+// Returns: 5000
+```
+
+---
+
+## toMs.minutes
+
+Converts minutes to milliseconds.
+
+```typescript
+toMs.minutes(value: number): number
+```
+
+<ParamField path="value" type="number" required>
+  The number of minutes to convert.
+</ParamField>
+
+<ResponseField name="result" type="number">
+  The equivalent time in milliseconds.
+</ResponseField>
+
+### Example
+
+```typescript
+import { toMs } from "@magicyan/core";
+
+toMs.minutes(2);
+// Returns: 120000
+```
+
+---
+
+## toMs.hours
+
+Converts hours to milliseconds.
+
+```typescript
+toMs.hours(value: number): number
+```
+
+<ParamField path="value" type="number" required>
+  The number of hours to convert.
+</ParamField>
+
+<ResponseField name="result" type="number">
+  The equivalent time in milliseconds.
+</ResponseField>
+
+### Example
+
+```typescript
+import { toMs } from "@magicyan/core";
+
+toMs.hours(1.5);
+// Returns: 5400000
+```
+
+---
+
+## toMs.days
+
+Converts days to milliseconds.
+
+```typescript
+toMs.days(value: number): number
+```
+
+<ParamField path="value" type="number" required>
+  The number of days to convert.
+</ParamField>
+
+<ResponseField name="result" type="number">
+  The equivalent time in milliseconds.
+</ResponseField>
+
+### Example
+
+```typescript
+import { toMs } from "@magicyan/core";
+
+toMs.days(1);
+// Returns: 86400000
+```

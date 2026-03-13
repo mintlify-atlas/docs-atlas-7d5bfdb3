@@ -1,122 +1,151 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Magicyan",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#7c7c7c",
+    "light": "#070707",
+    "dark": "#c4c4c4"
   },
-  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "https://media.brand.dev/1f1e4836-c9b0-4d21-a221-1411146261a9.svg",
+    "dark": "https://media.brand.dev/862e10d4-beb2-49d1-91ee-e52387c286bd.png"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/rinckodev/magicyan"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/rinckodev/magicyan"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "core/overview",
+              "core/conversion",
+              "core/formatting",
+              "core/math",
+              "core/timers",
+              "core/validation",
+              "core/date"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Discord",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "discord/overview",
+              "discord/commands",
+              "discord/channels",
+              "discord/members",
+              "discord/roles",
+              "discord/emojis",
+              "discord/webhooks",
+              "discord/embeds",
+              "discord/components"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Discord Events",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "discord-events/overview",
+              "discord-events/extended-events"
+            ]
+          },
+          {
+            "group": "Discord UI",
+            "pages": [
+              "discord-ui/overview",
+              "discord-ui/components"
+            ]
+          },
+          {
+            "group": "Canvas",
+            "pages": [
+              "canvas/overview",
+              "canvas/gradients",
+              "canvas/filters",
+              "canvas/fonts"
+            ]
+          },
+          {
+            "group": "Minecraft",
+            "pages": [
+              "minecraft/overview",
+              "minecraft/skins",
+              "minecraft/mojang-api",
+              "minecraft/server-status"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Core API",
             "pages": [
-              "api-reference/introduction"
+              "api/core/check",
+              "api/core/convert",
+              "api/core/format",
+              "api/core/math",
+              "api/core/ms",
+              "api/core/timers",
+              "api/core/validation",
+              "api/core/date",
+              "api/core/sleep"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Discord API",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/discord/channels",
+              "api/discord/commands",
+              "api/discord/emojis",
+              "api/discord/members",
+              "api/discord/message",
+              "api/discord/roles",
+              "api/discord/webhooks",
+              "api/discord/components",
+              "api/discord/embeds",
+              "api/discord/guards"
+            ]
+          },
+          {
+            "group": "Canvas API",
+            "pages": [
+              "api/canvas/font",
+              "api/canvas/gradient",
+              "api/canvas/filters"
+            ]
+          },
+          {
+            "group": "Minecraft API",
+            "pages": [
+              "api/minecraft/skins",
+              "api/minecraft/mojang",
+              "api/minecraft/mush",
+              "api/minecraft/server"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

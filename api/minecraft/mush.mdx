@@ -1,0 +1,512 @@
+---
+title: Mush API
+description: API reference for Mush Minecraft server player statistics and leaderboards
+---
+
+The Mush API provides functions to fetch player statistics and leaderboards from the Mush Minecraft server (mush.com.br).
+
+## Player Functions
+
+### fetchMushPlayerInfo
+
+Fetches comprehensive player information including stats for all game modes.
+
+```typescript
+async function fetchMushPlayerInfo(
+    nickOrUUID: string
+): Promise<FetchMushPlayerResult>
+```
+
+<ParamField path="nickOrUUID" type="string" required>
+  Player nickname or UUID
+</ParamField>
+
+<ResponseField name="success" type="boolean" required>
+  Whether the fetch was successful
+</ResponseField>
+
+<ResponseField name="data" type="MushPlayerInfo">
+  Available when `success` is `true`:
+  
+  <ResponseField name="account" type="MushPlayerAccount">
+    Player account information
+    
+    <ResponseField name="profileId" type="number">
+      Mush profile ID
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      Account type
+    </ResponseField>
+    
+    <ResponseField name="uniqueId" type="string">
+      Player UUID
+    </ResponseField>
+    
+    <ResponseField name="username" type="string">
+      Player username
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="bestTag" type="MushPlayerTag">
+    Player's best tag
+    
+    <ResponseField name="color" type="string">
+      Tag color
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Tag name
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="profileTag" type="MushPlayerTag">
+    Currently equipped profile tag
+  </ResponseField>
+  
+  <ResponseField name="rankTag" type="MushPlayerTag">
+    Player's rank tag
+  </ResponseField>
+  
+  <ResponseField name="connected" type="boolean">
+    Whether the player is currently online
+  </ResponseField>
+  
+  <ResponseField name="firstLogin" type="number">
+    Unix timestamp of first login
+  </ResponseField>
+  
+  <ResponseField name="lastLogin" type="number">
+    Unix timestamp of last login
+  </ResponseField>
+  
+  <ResponseField name="medal" type="string">
+    Currently equipped medal
+  </ResponseField>
+  
+  <ResponseField name="medals" type="string[]">
+    Array of all unlocked medals
+  </ResponseField>
+  
+  <ResponseField name="skin" type="MushPlayerSkin">
+    Player skin information
+    
+    <ResponseField name="hash" type="string">
+      Skin texture hash
+    </ResponseField>
+    
+    <ResponseField name="slim" type="boolean">
+      Whether using slim model
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="stats" type="MushPlayerStats">
+    Statistics for all game modes (camelCase keys)
+    
+    <ResponseField name="bedwars" type="MushBedWarsStats">
+      BedWars statistics
+    </ResponseField>
+    
+    <ResponseField name="blockparty" type="MushBlockpartyStats">
+      Block Party statistics
+    </ResponseField>
+    
+    <ResponseField name="bridgepractice" type="MushBrigdepraticeStats">
+      Bridge Practice statistics
+    </ResponseField>
+    
+    <ResponseField name="ctf" type="MushCTFStats">
+      Capture the Flag statistics
+    </ResponseField>
+    
+    <ResponseField name="duels" type="MushDuelsStats">
+      Duels statistics
+    </ResponseField>
+    
+    <ResponseField name="hungergames" type="MushHungergamesStats">
+      Hunger Games statistics
+    </ResponseField>
+    
+    <ResponseField name="murder" type="MushMurderStats">
+      Murder statistics
+    </ResponseField>
+    
+    <ResponseField name="party" type="MushPartyStats">
+      Party Games statistics
+    </ResponseField>
+    
+    <ResponseField name="playTime" type="MushPlaytimeStats">
+      Play time statistics
+    </ResponseField>
+    
+    <ResponseField name="pvp" type="MushPvpStats">
+      PvP statistics
+    </ResponseField>
+    
+    <ResponseField name="quickbuilders" type="MushQuickBuildersStats">
+      Quick Builders statistics
+    </ResponseField>
+    
+    <ResponseField name="seek" type="MushSeekStats">
+      Seek statistics
+    </ResponseField>
+    
+    <ResponseField name="skywarsR1" type="MushSkyWarsStats">
+      SkyWars R1 statistics
+    </ResponseField>
+  </ResponseField>
+  
+  <ResponseField name="tags" type="string[]">
+    Array of all unlocked tags
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message when `success` is `false`
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  Error code when `success` is `false`
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchMushPlayerInfo } from "@magicyan/minecraft";
+
+const result = await fetchMushPlayerInfo("Player123");
+
+if (result.success) {
+  const { account, connected, stats } = result.data;
+  
+  console.log(`Player: ${account.username}`);
+  console.log(`Online: ${connected}`);
+  console.log(`UUID: ${account.uniqueId}`);
+  
+  // BedWars stats
+  console.log(`\nBedWars Stats:`);
+  console.log(`  Level: ${stats.bedwars.level}`);
+  console.log(`  Wins: ${stats.bedwars.wins}`);
+  console.log(`  Kills: ${stats.bedwars.kills}`);
+  console.log(`  Final Kills: ${stats.bedwars.final_kills}`);
+  console.log(`  FKDR: ${stats.bedwars.fkdr}`);
+  
+  // PvP stats
+  console.log(`\nPvP Stats:`);
+  console.log(`  Arena Kills: ${stats.pvp.arena_kills}`);
+  console.log(`  Arena Deaths: ${stats.pvp.arena_deaths}`);
+  console.log(`  Highest Killstreak: ${stats.pvp.highest_killstreak}`);
+} else {
+  console.error(`Error ${result.code}: ${result.error}`);
+}
+```
+
+---
+
+## Leaderboard Functions
+
+### fetchMushLeaderboard
+
+Fetches the top players leaderboard for a specific game mode.
+
+```typescript
+async function fetchMushLeaderboard<T extends MushLeaderboardGame>(
+    game: T
+): Promise<FetchMushLeaderboardResult<T>>
+```
+
+<ParamField path="game" type="MushLeaderboardGame" required>
+  Game mode to fetch leaderboard for:
+  - `bedwars` - BedWars
+  - `skywars` - SkyWars
+  - `pvp` - PvP Arena
+  - `party` - Party Games
+  - `hg` - Hunger Games
+  - `murder` - Murder Mystery
+  - `quickbuilders` - Quick Builders
+  - `ctf` - Capture the Flag
+</ParamField>
+
+<ResponseField name="success" type="boolean" required>
+  Whether the fetch was successful
+</ResponseField>
+
+<ResponseField name="data" type="MushLeaderboard<T>">
+  Array of leaderboard items. Each item contains:
+  
+  <ResponseField name="position" type="number">
+    Player's rank position (1-based)
+  </ResponseField>
+  
+  <ResponseField name="color" type="string">
+    Display color for the player
+  </ResponseField>
+  
+  <ResponseField name="account" type="MushPlayerAccount">
+    Player account information
+  </ResponseField>
+  
+  <ResponseField name="avatarURL" type="string">
+    URL to player's avatar image
+  </ResponseField>
+  
+  <ResponseField name="game" type="MushLeaderboardGame">
+    Game mode for this leaderboard
+  </ResponseField>
+  
+  <ResponseField name="get" type="(stats: MushLeaderboardGameStats) => number">
+    Method to retrieve specific stats. Returns `-1` if stat doesn't exist for this game.
+    
+    Available stats by game:
+    - `wins`: bedwars, hg, murder, quickbuilders, skywars
+    - `losses`: murder, quickbuilders, skywars
+    - `level`: bedwars, skywars
+    - `kills`: bedwars, ctf, hg, skywars
+    - `final_kills`: bedwars
+    - `kd`: hg
+    - `coins`: ctf, skywars
+    - `deaths`: hg
+    - `perfect_builds`: quickbuilders
+    - `builds`: quickbuilders
+    - `arena_kills`: pvp
+    - `arena_deaths`: pvp
+    - `arena_kdr`: pvp
+    - `points`: party
+    - `first_place`: party
+    - `second_place`: party
+    - `third_place`: party
+    - `captures`: ctf
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message when `success` is `false`
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code when `success` is `false`
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchMushLeaderboard } from "@magicyan/minecraft";
+
+// Fetch BedWars leaderboard
+const result = await fetchMushLeaderboard("bedwars");
+
+if (result.success) {
+  console.log("Top 10 BedWars Players:\n");
+  
+  result.data.slice(0, 10).forEach((player) => {
+    const wins = player.get("wins");
+    const kills = player.get("kills");
+    const finalKills = player.get("final_kills");
+    const level = player.get("level");
+    
+    console.log(`#${player.position} ${player.account.username}`);
+    console.log(`  Level: ${level}`);
+    console.log(`  Wins: ${wins}`);
+    console.log(`  Kills: ${kills}`);
+    console.log(`  Final Kills: ${finalKills}\n`);
+  });
+} else {
+  console.error(`Error: ${result.error}`);
+}
+
+// Fetch PvP leaderboard
+const pvpResult = await fetchMushLeaderboard("pvp");
+
+if (pvpResult.success) {
+  const topPlayer = pvpResult.data[0];
+  
+  console.log(`Top PvP Player: ${topPlayer.account.username}`);
+  console.log(`Arena Kills: ${topPlayer.get("arena_kills")}`);
+  console.log(`Arena Deaths: ${topPlayer.get("arena_deaths")}`);
+  console.log(`KDR: ${topPlayer.get("arena_kdr")}`);
+}
+```
+
+---
+
+## Type Definitions
+
+### MushPlayerAccount
+
+```typescript
+interface MushPlayerAccount {
+  profileId: number;
+  type: string;
+  uniqueId: string;  // UUID
+  username: string;
+}
+```
+
+### MushPlayerTag
+
+```typescript
+interface MushPlayerTag {
+  color: string;
+  name: string;
+}
+```
+
+### MushPlayerSkin
+
+```typescript
+interface MushPlayerSkin {
+  hash: string;
+  slim: boolean;
+}
+```
+
+### MushBedWarsStats
+
+Comprehensive BedWars statistics including overall and mode-specific stats.
+
+```typescript
+interface MushBedWarsStats {
+  // Overall stats
+  assists: number;
+  deaths: number;
+  games_played: number;
+  kills: number;
+  level: number;
+  level_badge: MushGameBadge;
+  losses: number;
+  max_winstreak: number;
+  wins: number;
+  winstreak: number;
+  xp: number;
+  beds_broken: number;
+  beds_lost: number;
+  final_assists: number;
+  final_deaths: number;
+  final_kills: number;
+  fkdr: number;  // Final Kill/Death Ratio
+  
+  // Mode-specific stats: solo, doubles, 3v3v3v3, 4v4v4v4, infection_solo
+  // Each with their own kills, deaths, wins, losses, etc.
+  // See full type definition in source code
+}
+```
+
+### MushPvpStats
+
+PvP arena and FPS statistics.
+
+```typescript
+interface MushPvpStats {
+  "1v1_losses": number;
+  "1v1_wins": number;
+  arena_deaths: number;
+  arena_kills: number;
+  arena_kills_weekly: number;
+  arena_killstreak: number;
+  arena_max_killstreak: number;
+  coins: number;
+  deaths: number;
+  fps_deaths: number;
+  fps_kills: number;
+  fps_killstreak: number;
+  fps_max_killstreak: number;
+  highest_killstreak: number;
+  highest_winstreak: number;
+  kills: number;
+  mlg_hits: number;
+  mlg_misses: number;
+  // Challenge mode stats
+  challenges_drops_plays: number;
+  challenges_extreme_plays: number;
+  challenges_medium_plays: number;
+  challenges_wither_plays: number;
+  // ... and more
+}
+```
+
+### MushLeaderboardGame
+
+Available game modes for leaderboards.
+
+```typescript
+type MushLeaderboardGame = 
+  | "bedwars"
+  | "skywars"
+  | "pvp"
+  | "party"
+  | "hg"        // Hunger Games
+  | "murder"
+  | "quickbuilders"
+  | "ctf";      // Capture the Flag
+```
+
+### MushLeaderboardGameStats
+
+Available statistics that can be queried via the `get()` method.
+
+```typescript
+type MushLeaderboardGameStats = 
+  | "wins"
+  | "losses"
+  | "level"
+  | "kills"
+  | "final_kills"
+  | "kd"
+  | "coins"
+  | "deaths"
+  | "perfect_builds"
+  | "builds"
+  | "arena_kills"
+  | "arena_deaths"
+  | "arena_kdr"
+  | "points"
+  | "first_place"
+  | "second_place"
+  | "third_place"
+  | "captures";
+```
+
+---
+
+## Usage Notes
+
+### API Endpoint
+
+This module uses the official Mush API:
+- Base URL: `https://mush.com.br/api`
+- Player endpoint: `/player/{nickOrUUID}`
+- Leaderboard endpoint: `/leaderboard/{game}`
+
+### Key Conversion
+
+The API automatically converts snake_case keys from the Mush API to camelCase for better TypeScript/JavaScript conventions:
+
+```typescript
+// API returns: play_time, skywars_r1, final_kills
+// You access as: playTime, skywarsR1, final_kills
+
+const stats = result.data.stats;
+stats.playTime;      // ✓ Correct
+stats.skywarsR1;     // ✓ Correct
+stats.bedwars.final_kills;  // ✓ Correct (preserves original structure)
+```
+
+### Error Handling
+
+The Mush API returns specific error codes:
+
+```typescript
+const result = await fetchMushPlayerInfo("NonExistentPlayer");
+
+if (!result.success) {
+  if (result.code === 404) {
+    console.log("Player not found");
+  } else if (result.code === -1) {
+    console.log("API error:", result.error);
+  }
+}
+```
+
+### Leaderboard Updates
+
+Leaderboards are typically updated periodically by the Mush server. Cache results appropriately to avoid unnecessary requests.

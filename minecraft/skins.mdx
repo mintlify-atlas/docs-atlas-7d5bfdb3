@@ -1,0 +1,359 @@
+---
+title: 'Skins'
+description: 'Render and fetch Minecraft player skins with custom poses and styles'
+icon: 'shirt'
+---
+
+The skins module provides functions to fetch player skin information and render skins with various poses, crops, and customization options.
+
+## Functions
+
+### fetchSkinRender
+
+Fetch a rendered image of a player's skin with customizable pose and options.
+
+```typescript
+async function fetchSkinRender<T extends SkinRenderType = "default">(
+  nickOrUUID: string,
+  type?: T,
+  crop?: SkinRenderTypeCrop[T],
+  options?: SkinRenderOptions
+): Promise<FetchSkinRenderResult>
+```
+
+#### Parameters
+
+- `nickOrUUID` - Player username or UUID
+- `type` - Render type/pose (see [Render Types](#render-types))
+- `crop` - Crop style: `"full"`, `"bust"`, `"face"`, `"head"`, `"processed"`, or `"barebones"`
+- `options` - Camera, lighting, and model options
+
+#### Returns
+
+```typescript
+type FetchSkinRenderResult = FetchResult<{
+  buffer: Buffer;
+  arrayBuffer: ArrayBuffer;
+  url: string;
+  response: Response;
+}>;
+```
+
+#### Example
+
+```typescript
+import { fetchSkinRender } from '@magicyan/minecraft';
+
+// Basic usage
+const result = await fetchSkinRender('Notch');
+
+if (result.success) {
+  console.log('Skin URL:', result.data.url);
+  // Save the buffer to a file or send in Discord
+  const buffer = result.data.buffer;
+}
+
+// With custom pose and crop
+const walking = await fetchSkinRender('Steve', 'walking', 'bust');
+
+// With advanced options
+const custom = await fetchSkinRender('Alex', 'default', 'full', {
+  camera: {
+    cameraWidth: 1920,
+    cameraHeight: 1080,
+    cameraFOV: 60,
+  },
+  lighting: {
+    dirLightColor: 'ff8800',
+    globalLightIntensity: 2,
+  },
+  model: {
+    skinType: 'slim',
+    capeEnabled: false,
+  },
+});
+```
+
+### skinRoute
+
+Generate a URL for a skin render without fetching it.
+
+```typescript
+function skinRoute<const T extends SkinRenderType>(
+  nickOrUUID: string,
+  type?: T,
+  crop?: SkinRenderTypeCrop[T],
+  options?: SkinRenderOptions
+): string
+```
+
+#### Example
+
+```typescript
+import { skinRoute } from '@magicyan/minecraft';
+
+const url = skinRoute('Notch', 'isometric', 'full', {
+  camera: { isometric: true },
+});
+
+console.log(url);
+// Use this URL in embeds, images, etc.
+```
+
+### fetchSkinInfo
+
+Fetch detailed information about a player's skin.
+
+```typescript
+async function fetchSkinInfo(nickOrUUID: string): Promise<FetchSkinInfoResult>
+```
+
+#### Returns
+
+```typescript
+interface SkinInfo {
+  /** The UUID of the requested player */
+  playerUUID: string;
+  /** The link to the player's skin file */
+  skinUrl: string;
+  /** The link to the player's cape file */
+  userCape: string;
+  /** Base64 copy of classic skin converted to 64x64 */
+  processedSkinUrl: string;
+  /** Skin geometry: "slim" or "wide" */
+  skinType: "slim" | "wide";
+  /** Width in pixels of the player's skin */
+  skinTextureWidth: number;
+  /** Height in pixels of the player's skin */
+  skinTextureHeight: number;
+}
+```
+
+#### Example
+
+```typescript
+import { fetchSkinInfo } from '@magicyan/minecraft';
+
+const result = await fetchSkinInfo('Notch');
+
+if (result.success) {
+  const info = result.data;
+  console.log('UUID:', info.playerUUID);
+  console.log('Skin URL:', info.skinUrl);
+  console.log('Skin Type:', info.skinType);
+  console.log('Dimensions:', `${info.skinTextureWidth}x${info.skinTextureHeight}`);
+  
+  if (info.userCape) {
+    console.log('Cape:', info.userCape);
+  }
+}
+```
+
+## Render Types
+
+Available skin render poses:
+
+<CardGroup cols={3}>
+  <Card title="default" icon="user">
+    Standing pose with arms at sides
+  </Card>
+  <Card title="marching" icon="person-walking">
+    Walking with marching arms
+  </Card>
+  <Card title="walking" icon="person-walking">
+    Natural walking pose
+  </Card>
+  <Card title="crouching" icon="down">
+    Sneaking/crouching pose
+  </Card>
+  <Card title="crossed" icon="xmark">
+    Arms crossed pose
+  </Card>
+  <Card title="ultimate" icon="star">
+    Dynamic action pose
+  </Card>
+  <Card title="isometric" icon="cube">
+    Isometric/orthographic view
+  </Card>
+  <Card title="head" icon="circle-user">
+    Head only render
+  </Card>
+  <Card title="cheering" icon="hands-clapping">
+    Victory/cheering pose
+  </Card>
+  <Card title="relaxing" icon="couch">
+    Sitting/relaxed pose
+  </Card>
+  <Card title="pointing" icon="hand-point-right">
+    Pointing gesture
+  </Card>
+  <Card title="archer" icon="bow-arrow">
+    Drawing a bow
+  </Card>
+  <Card title="sleeping" icon="bed">
+    Sleeping pose
+  </Card>
+  <Card title="reading" icon="book">
+    Reading a book
+  </Card>
+  <Card title="pixel" icon="grid">
+    Pixelated style
+  </Card>
+</CardGroup>
+
+And more: `criss_cross`, `trudging`, `cowering`, `lunging`, `dungeons`, `facepalm`, `dead`, `kicking`, `mojavatar`, `high_ground`, `clown`, `bitzel`, `ornament`, `skin`, `profile`, `custom`
+
+## Render Options
+
+### Camera Options
+
+```typescript
+interface SkinRenderCameraOptions {
+  /** Camera position coordinates */
+  cameraPosition?: { x: number; y: number; z: number };
+  /** Camera focal point coordinates */
+  cameraFocalPoint?: { x: number; y: number; z: number };
+  /** Image width (max 3840px) */
+  cameraWidth?: number;
+  /** Image height (max 3840px) */
+  cameraHeight?: number;
+  /** Render scale (3D renders only) */
+  renderScale?: number;
+  /** Field of view (default: 75) */
+  cameraFOV?: number;
+  /** Use orthographic camera */
+  isometric?: boolean;
+  /** Enable border highlight */
+  borderHighlight?: boolean;
+  /** Border highlight color (hex) */
+  borderHighlightColor?: string;
+  /** Border highlight radius */
+  borderHighlightRadius?: number;
+  /** Enable drop shadow */
+  dropShadow?: boolean;
+}
+```
+
+### Lighting Options
+
+```typescript
+interface SkinRenderLightingOptions {
+  /** Directional light position */
+  dirLightPos?: { x: number; y: number; z: number };
+  /** Directional light color (hex) */
+  dirLightColor?: string;
+  /** Directional light intensity adjustment */
+  dirLightIntensity?: number;
+  /** Global light color (hex) */
+  globalLightColor?: string;
+  /** Global light intensity adjustment */
+  globalLightIntensity?: number;
+}
+```
+
+### Model Options
+
+```typescript
+interface SkinRenderModelOptions {
+  /** Custom skin URL */
+  skinUrl?: string;
+  /** Skin model type: "slim" or "wide" */
+  skinType?: "slim" | "wide";
+  /** Custom wide model URL */
+  wideModel?: string;
+  /** Custom slim model URL */
+  slimModel?: string;
+  /** Prop model URL (OBJ format) */
+  propModel?: string;
+  /** Prop texture URL */
+  propTexture?: string;
+  /** Custom cape model URL (OBJ) */
+  capeModel?: string;
+  /** Custom cape texture URL */
+  capeTexture?: string;
+  /** Enable cape rendering */
+  capeEnabled?: boolean;
+  /** Enable prop model shading */
+  propModelShading?: boolean;
+  /** Enable cape model shading */
+  capeModelShading?: boolean;
+  /** Enable player model shading */
+  playerModelShading?: boolean;
+}
+```
+
+## Advanced Examples
+
+### Custom Lighting
+
+```typescript
+const result = await fetchSkinRender('Notch', 'default', 'full', {
+  lighting: {
+    dirLightColor: 'ff0000',  // Red directional light
+    dirLightIntensity: 3,
+    globalLightColor: '0000ff',  // Blue ambient light
+    globalLightIntensity: 1,
+  },
+});
+```
+
+### High Resolution Render
+
+```typescript
+const result = await fetchSkinRender('Steve', 'isometric', 'full', {
+  camera: {
+    cameraWidth: 3840,
+    cameraHeight: 3840,
+    isometric: true,
+  },
+});
+```
+
+### Custom Skin URL
+
+```typescript
+const result = await fetchSkinRender('Custom', 'default', 'full', {
+  model: {
+    skinUrl: 'https://example.com/custom-skin.png',
+    skinType: 'slim',
+  },
+});
+```
+
+### Discord Bot Example
+
+```typescript
+import { fetchSkinRender } from '@magicyan/minecraft';
+import { AttachmentBuilder } from 'discord.js';
+
+const result = await fetchSkinRender('Notch', 'ultimate', 'full');
+
+if (result.success) {
+  const attachment = new AttachmentBuilder(result.data.buffer, {
+    name: 'skin.png',
+  });
+  
+  await interaction.reply({
+    files: [attachment],
+  });
+}
+```
+
+## Error Handling
+
+```typescript
+const result = await fetchSkinRender('InvalidPlayer');
+
+if (!result.success) {
+  console.error(`Failed to fetch skin: ${result.error} (${result.code})`);
+  // Handle error appropriately
+}
+```
+
+## API Source
+
+The skin rendering uses the Starlight Skins API:
+
+```typescript
+RouteBases.skins = 'https://starlightskins.lunareclipse.studio'
+```

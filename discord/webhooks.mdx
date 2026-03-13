@@ -1,0 +1,494 @@
+---
+title: 'Webhooks'
+description: 'Create webhook clients safely'
+icon: 'link'
+---
+
+## Overview
+
+The webhooks module provides a safe wrapper for creating webhook clients with built-in error handling.
+
+## createWebhookClient
+
+Create a `WebhookClient` from a URL or data object with automatic error handling.
+
+### Signature
+
+```typescript
+function createWebhookClient(
+  url: string,
+  options?: WebhookClientOptions
+): WebhookClient | null;
+
+function createWebhookClient(
+  data: WebhookClientData,
+  options?: WebhookClientOptions
+): WebhookClient | null;
+```
+
+### Parameters
+
+<ParamField path="url" type="string">
+  The full webhook URL from Discord
+</ParamField>
+
+<ParamField path="data" type="WebhookClientData">
+  An object containing webhook ID and token
+  ```typescript
+  {
+    id: string;
+    token: string;
+  }
+  ```
+</ParamField>
+
+<ParamField path="options" type="WebhookClientOptions">
+  Optional configuration for the webhook client
+</ParamField>
+
+**Returns:** `WebhookClient | null` - Returns the client or `null` if creation fails
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="From URL">
+    ```typescript
+    import { createWebhookClient } from '@magicyan/discord';
+
+    const webhookUrl = 'https://discord.com/api/webhooks/123/abc...';
+    const webhook = createWebhookClient(webhookUrl);
+
+    if (webhook) {
+      await webhook.send('Hello from webhook!');
+    } else {
+      console.error('Failed to create webhook client');
+    }
+    ```
+  </Tab>
+  
+  <Tab title="From Data">
+    ```typescript
+    import { createWebhookClient } from '@magicyan/discord';
+
+    const webhook = createWebhookClient({
+      id: '1234567890',
+      token: 'abc123def456...'
+    });
+
+    if (webhook) {
+      await webhook.send({
+        content: 'Message sent!',
+        username: 'Custom Bot Name',
+        avatarURL: 'https://example.com/avatar.png'
+      });
+    }
+    ```
+  </Tab>
+  
+  <Tab title="With Options">
+    ```typescript
+    import { createWebhookClient } from '@magicyan/discord';
+
+    const webhook = createWebhookClient(
+      'https://discord.com/api/webhooks/123/abc...',
+      {
+        allowedMentions: {
+          parse: ['users'],
+          repliedUser: false
+        }
+      }
+    );
+
+    if (webhook) {
+      await webhook.send('Notification sent!');
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Safe Error Handling
+
+The function returns `null` instead of throwing errors:
+
+```typescript
+import { createWebhookClient } from '@magicyan/discord';
+
+function sendToWebhook(url: string, message: string) {
+  const webhook = createWebhookClient(url);
+  
+  if (!webhook) {
+    console.error('Invalid webhook URL or credentials');
+    return false;
+  }
+  
+  try {
+    await webhook.send(message);
+    return true;
+  } catch (error) {
+    console.error('Failed to send webhook message:', error);
+    return false;
+  }
+}
+```
+
+<Note>
+  Always check if the webhook client was created successfully before using it. Invalid URLs or credentials will return `null`.
+</Note>
+
+## Real-World Examples
+
+### Logging System
+
+```typescript
+import { createWebhookClient, createEmbed } from '@magicyan/discord';
+import { WebhookClient } from 'discord.js';
+
+class WebhookLogger {
+  private webhook: WebhookClient | null;
+  
+  constructor(webhookUrl: string) {
+    this.webhook = createWebhookClient(webhookUrl);
+    
+    if (!this.webhook) {
+      console.error('Failed to initialize webhook logger');
+    }
+  }
+  
+  async log(level: 'info' | 'warn' | 'error', message: string) {
+    if (!this.webhook) return;
+    
+    const colors = {
+      info: '#5865F2',
+      warn: '#FFA500',
+      error: '#ED4245'
+    };
+    
+    const embed = createEmbed({
+      title: `${level.toUpperCase()}: Log Entry`,
+      description: message,
+      color: colors[level],
+      timestamp: true
+    });
+    
+    await this.webhook.send({ embeds: [embed] });
+  }
+  
+  async info(message: string) {
+    await this.log('info', message);
+  }
+  
+  async warn(message: string) {
+    await this.log('warn', message);
+  }
+  
+  async error(message: string) {
+    await this.log('error', message);
+  }
+}
+
+// Usage
+const logger = new WebhookLogger(process.env.LOG_WEBHOOK_URL!);
+
+await logger.info('Application started');
+await logger.warn('Low memory warning');
+await logger.error('Database connection failed');
+```
+
+### Multi-Server Notifications
+
+```typescript
+import { createWebhookClient } from '@magicyan/discord';
+import { WebhookClient } from 'discord.js';
+
+interface ServerWebhook {
+  name: string;
+  url: string;
+  client?: WebhookClient;
+}
+
+class NotificationManager {
+  private webhooks: ServerWebhook[] = [];
+  
+  addServer(name: string, webhookUrl: string) {
+    const client = createWebhookClient(webhookUrl);
+    
+    if (client) {
+      this.webhooks.push({ name, url: webhookUrl, client });
+      console.log(`Added webhook for ${name}`);
+    } else {
+      console.error(`Failed to create webhook for ${name}`);
+    }
+  }
+  
+  async broadcast(message: string) {
+    const results = await Promise.allSettled(
+      this.webhooks.map(({ name, client }) => {
+        if (!client) return Promise.reject(`No client for ${name}`);
+        return client.send(message).then(() => name);
+      })
+    );
+    
+    const successful = results.filter(r => r.status === 'fulfilled');
+    console.log(`Sent to ${successful.length}/${this.webhooks.length} servers`);
+  }
+  
+  async sendToServer(serverName: string, message: string) {
+    const webhook = this.webhooks.find(w => w.name === serverName);
+    
+    if (!webhook?.client) {
+      console.error(`No webhook found for ${serverName}`);
+      return false;
+    }
+    
+    try {
+      await webhook.client.send(message);
+      return true;
+    } catch (error) {
+      console.error(`Failed to send to ${serverName}:`, error);
+      return false;
+    }
+  }
+}
+
+// Usage
+const manager = new NotificationManager();
+manager.addServer('Main Server', process.env.MAIN_WEBHOOK_URL!);
+manager.addServer('Test Server', process.env.TEST_WEBHOOK_URL!);
+
+await manager.broadcast('Update deployed to all servers!');
+await manager.sendToServer('Main Server', 'Specific announcement');
+```
+
+### GitHub Integration
+
+```typescript
+import { createWebhookClient, createEmbed } from '@magicyan/discord';
+import express from 'express';
+
+const app = express();
+app.use(express.json());
+
+const webhook = createWebhookClient(process.env.GITHUB_WEBHOOK_URL!);
+
+app.post('/github-webhook', async (req, res) => {
+  if (!webhook) {
+    res.status(500).send('Webhook not configured');
+    return;
+  }
+  
+  const event = req.headers['x-github-event'];
+  const payload = req.body;
+  
+  if (event === 'push') {
+    const { commits, repository, pusher } = payload;
+    
+    const embed = createEmbed({
+      title: '📦 New Push',
+      description: `[${repository.full_name}](${repository.html_url})`,
+      fields: [
+        {
+          name: 'Commits',
+          value: commits.length.toString(),
+          inline: true
+        },
+        {
+          name: 'Author',
+          value: pusher.name,
+          inline: true
+        },
+        {
+          name: 'Latest Commit',
+          value: commits[0]?.message || 'No message'
+        }
+      ],
+      color: '#238636',
+      timestamp: true
+    });
+    
+    await webhook.send({ embeds: [embed] });
+  }
+  
+  res.status(200).send('OK');
+});
+
+app.listen(3000, () => {
+  console.log('GitHub webhook server running on port 3000');
+});
+```
+
+### Status Updates
+
+```typescript
+import { createWebhookClient } from '@magicyan/discord';
+
+class StatusMonitor {
+  private webhook: WebhookClient | null;
+  private lastStatus: 'online' | 'offline' = 'online';
+  
+  constructor(webhookUrl: string) {
+    this.webhook = createWebhookClient(webhookUrl);
+  }
+  
+  async checkStatus(serviceUrl: string, serviceName: string) {
+    try {
+      const response = await fetch(serviceUrl);
+      const isOnline = response.ok;
+      
+      if (isOnline && this.lastStatus === 'offline') {
+        await this.notifyStatusChange(serviceName, 'online');
+        this.lastStatus = 'online';
+      } else if (!isOnline && this.lastStatus === 'online') {
+        await this.notifyStatusChange(serviceName, 'offline');
+        this.lastStatus = 'offline';
+      }
+    } catch (error) {
+      if (this.lastStatus === 'online') {
+        await this.notifyStatusChange(serviceName, 'offline');
+        this.lastStatus = 'offline';
+      }
+    }
+  }
+  
+  private async notifyStatusChange(
+    serviceName: string,
+    status: 'online' | 'offline'
+  ) {
+    if (!this.webhook) return;
+    
+    const emoji = status === 'online' ? '✅' : '❌';
+    const message = `${emoji} **${serviceName}** is now ${status.toUpperCase()}`;
+    
+    await this.webhook.send({
+      content: message,
+      username: 'Status Monitor'
+    });
+  }
+}
+
+// Usage
+const monitor = new StatusMonitor(process.env.STATUS_WEBHOOK_URL!);
+
+setInterval(async () => {
+  await monitor.checkStatus('https://api.example.com/health', 'API Service');
+}, 60000); // Check every minute
+```
+
+### Database Backup Notifications
+
+```typescript
+import { createWebhookClient, createEmbed } from '@magicyan/discord';
+
+interface BackupResult {
+  success: boolean;
+  filename: string;
+  size: number;
+  duration: number;
+  error?: string;
+}
+
+async function notifyBackupComplete(result: BackupResult) {
+  const webhook = createWebhookClient(process.env.BACKUP_WEBHOOK_URL!);
+  if (!webhook) return;
+  
+  const embed = createEmbed({
+    title: result.success ? '✅ Backup Completed' : '❌ Backup Failed',
+    fields: [
+      { name: 'Filename', value: result.filename, inline: true },
+      { name: 'Size', value: formatBytes(result.size), inline: true },
+      { name: 'Duration', value: `${result.duration}s`, inline: true }
+    ],
+    color: result.success ? '#00FF00' : '#FF0000',
+    timestamp: true
+  });
+  
+  if (result.error) {
+    embed.addFields({ name: 'Error', value: result.error });
+  }
+  
+  await webhook.send({ embeds: [embed] });
+}
+
+function formatBytes(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unitIndex = 0;
+  
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  
+  return `${size.toFixed(2)} ${units[unitIndex]}`;
+}
+```
+
+## Best Practices
+
+<Warning>
+  Never commit webhook URLs to version control. Always use environment variables or secure configuration management.
+</Warning>
+
+<Tip>
+  Store webhook URLs in environment variables and validate them on application startup.
+</Tip>
+
+<Note>
+  Webhook clients are rate-limited by Discord. Implement proper rate limiting for production applications.
+</Note>
+
+## Environment Variables
+
+Recommended setup:
+
+```typescript
+import { createWebhookClient } from '@magicyan/discord';
+
+class Config {
+  static readonly WEBHOOKS = {
+    logs: createWebhookClient(process.env.LOG_WEBHOOK_URL!),
+    errors: createWebhookClient(process.env.ERROR_WEBHOOK_URL!),
+    notifications: createWebhookClient(process.env.NOTIFY_WEBHOOK_URL!)
+  };
+  
+  static validate() {
+    const missing: string[] = [];
+    
+    if (!this.WEBHOOKS.logs) missing.push('LOG_WEBHOOK_URL');
+    if (!this.WEBHOOKS.errors) missing.push('ERROR_WEBHOOK_URL');
+    if (!this.WEBHOOKS.notifications) missing.push('NOTIFY_WEBHOOK_URL');
+    
+    if (missing.length > 0) {
+      throw new Error(`Missing webhook URLs: ${missing.join(', ')}`);
+    }
+  }
+}
+
+// Validate on startup
+Config.validate();
+```
+
+## API Reference
+
+### createWebhookClient(url, options?)
+
+<ParamField path="url" type="string" required>
+  The full webhook URL from Discord
+</ParamField>
+
+<ParamField path="options" type="WebhookClientOptions">
+  Optional configuration for the webhook client
+</ParamField>
+
+**Returns:** `WebhookClient | null`
+
+### createWebhookClient(data, options?)
+
+<ParamField path="data" type="WebhookClientData" required>
+  Object containing `id` and `token` properties
+</ParamField>
+
+<ParamField path="options" type="WebhookClientOptions">
+  Optional configuration for the webhook client
+</ParamField>
+
+**Returns:** `WebhookClient | null`

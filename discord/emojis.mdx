@@ -1,0 +1,435 @@
+---
+title: 'Emojis'
+description: 'Find guild and global emojis'
+icon: 'smile'
+---
+
+## Overview
+
+The emojis module provides utilities for finding custom emojis in guilds or across all guilds the bot has access to.
+
+## findEmoji
+
+Search for custom emojis with support for animated emojis.
+
+### Signature
+
+```typescript
+function findEmoji(guildOrClient: Guild | Client): {
+  byName(name: string, animated?: boolean, and?: (emoji: GuildEmoji) => boolean): GuildEmoji | undefined;
+  byId(id: string, animated?: boolean): GuildEmoji | undefined;
+  byFilter(filter: (emoji: GuildEmoji) => boolean): GuildEmoji | undefined;
+}
+```
+
+### Basic Usage
+
+<Tabs>
+  <Tab title="Find by Name">
+    ```typescript
+    import { findEmoji } from '@magicyan/discord';
+    import { Guild } from 'discord.js';
+
+    const guild: Guild = ...;
+
+    // Find a static emoji
+    const emoji = findEmoji(guild).byName('happy');
+
+    if (emoji) {
+      console.log(`Found: ${emoji}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find Animated Emoji">
+    ```typescript
+    import { findEmoji } from '@magicyan/discord';
+
+    // Find an animated emoji
+    const animatedEmoji = findEmoji(guild).byName('party', true);
+
+    if (animatedEmoji) {
+      await channel.send(`Let's party! ${animatedEmoji}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by ID">
+    ```typescript
+    import { findEmoji } from '@magicyan/discord';
+
+    // Find by emoji ID
+    const emoji = findEmoji(guild).byId('1234567890');
+
+    if (emoji) {
+      console.log(`Emoji: ${emoji.name}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Global Search">
+    ```typescript
+    import { findEmoji } from '@magicyan/discord';
+    import { Client } from 'discord.js';
+
+    const client: Client = ...;
+
+    // Search across all guilds
+    const globalEmoji = findEmoji(client).byName('logo');
+
+    if (globalEmoji) {
+      console.log(`Found in guild: ${globalEmoji.guild?.name}`);
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Search with Filters
+
+<CodeGroup>
+
+```typescript Guild Filter
+import { findEmoji } from '@magicyan/discord';
+
+// Find emoji with additional condition
+const managedEmoji = findEmoji(client).byName(
+  'twitch',
+  false,
+  emoji => emoji.managed
+);
+```
+
+```typescript Author Filter
+import { findEmoji } from '@magicyan/discord';
+
+// Find emoji by creator
+const userEmoji = findEmoji(guild).byName(
+  'custom',
+  false,
+  emoji => emoji.author?.id === userId
+);
+```
+
+```typescript Custom Filter
+import { findEmoji } from '@magicyan/discord';
+
+// Find available emoji
+const availableEmoji = findEmoji(guild).byFilter(
+  emoji => emoji.available && !emoji.managed
+);
+```
+
+</CodeGroup>
+
+## Animated vs Static Emojis
+
+Handle both types of custom emojis:
+
+```typescript
+import { findEmoji } from '@magicyan/discord';
+
+const guild: Guild = ...;
+
+// Find static emoji
+const staticEmoji = findEmoji(guild).byName('fire', false);
+
+// Find animated emoji
+const animatedEmoji = findEmoji(guild).byName('fire', true);
+
+// Find either (prefers static if both exist)
+const anyEmoji = findEmoji(guild).byName('fire');
+
+if (staticEmoji) {
+  console.log('Static:', staticEmoji.toString()); // <:fire:123456>
+}
+
+if (animatedEmoji) {
+  console.log('Animated:', animatedEmoji.toString()); // <a:fire:789012>
+}
+```
+
+<Note>
+  When not specifying the `animated` parameter, the function will return the first emoji matching the name, regardless of whether it's animated.
+</Note>
+
+## Real-World Examples
+
+### Emoji Reaction System
+
+```typescript
+import { findEmoji } from '@magicyan/discord';
+import { Message } from 'discord.js';
+
+async function addReactionButtons(message: Message) {
+  const reactions = ['thumbsup', 'heart', 'fire', 'star'];
+  
+  for (const emojiName of reactions) {
+    const emoji = findEmoji(message.guild!).byName(emojiName);
+    
+    if (emoji) {
+      await message.react(emoji);
+    } else {
+      // Fallback to Unicode emoji
+      const unicodeFallback = {
+        'thumbsup': '👍',
+        'heart': '❤️',
+        'fire': '🔥',
+        'star': '⭐'
+      };
+      await message.react(unicodeFallback[emojiName]);
+    }
+  }
+}
+```
+
+### Emoji List Command
+
+```typescript
+import { findEmoji, createEmbed } from '@magicyan/discord';
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function handleEmojiListCommand(interaction: ChatInputCommandInteraction) {
+  const guild = interaction.guild!;
+  const emojis = guild.emojis.cache;
+  
+  const staticEmojis = emojis.filter(e => !e.animated);
+  const animatedEmojis = emojis.filter(e => e.animated);
+  
+  const embed = createEmbed({
+    title: '😀 Server Emojis',
+    fields: [
+      {
+        name: `Static Emojis (${staticEmojis.size})`,
+        value: staticEmojis.first(10).map(e => `${e} \`${e.name}\``).join(' ') || 'None'
+      },
+      {
+        name: `Animated Emojis (${animatedEmojis.size})`,
+        value: animatedEmojis.first(10).map(e => `${e} \`${e.name}\``).join(' ') || 'None'
+      },
+      {
+        name: 'Usage',
+        value: `Total: ${emojis.size}/${guild.premiumTier === 'TIER_3' ? '250' : guild.premiumTier === 'TIER_2' ? '150' : '100'}`
+      }
+    ],
+    color: '#5865F2',
+    timestamp: true
+  });
+  
+  await interaction.reply({ embeds: [embed] });
+}
+```
+
+### Dynamic Emoji Responses
+
+```typescript
+import { findEmoji } from '@magicyan/discord';
+import { Client, Message } from 'discord.js';
+
+const client = new Client({ intents: [...] });
+
+const emojiResponses: Record<string, string> = {
+  'hello': 'wave',
+  'thanks': 'heart',
+  'nice': 'thumbsup',
+  'awesome': 'fire'
+};
+
+client.on('messageCreate', async (message: Message) => {
+  if (message.author.bot || !message.guild) return;
+  
+  const content = message.content.toLowerCase();
+  
+  for (const [trigger, emojiName] of Object.entries(emojiResponses)) {
+    if (content.includes(trigger)) {
+      const emoji = findEmoji(message.guild).byName(emojiName);
+      
+      if (emoji) {
+        await message.react(emoji);
+      }
+      break;
+    }
+  }
+});
+```
+
+### Emoji Info Command
+
+```typescript
+import { findEmoji, createEmbed } from '@magicyan/discord';
+import { ChatInputCommandInteraction, time } from 'discord.js';
+
+async function handleEmojiInfoCommand(interaction: ChatInputCommandInteraction) {
+  const emojiName = interaction.options.getString('emoji', true);
+  const emoji = findEmoji(interaction.guild!).byName(emojiName);
+  
+  if (!emoji) {
+    await interaction.reply('Emoji not found!');
+    return;
+  }
+  
+  const embed = createEmbed({
+    title: `${emoji} ${emoji.name}`,
+    thumbnail: emoji.imageURL({ size: 256 }),
+    fields: [
+      { name: 'ID', value: emoji.id, inline: true },
+      { name: 'Animated', value: emoji.animated ? 'Yes' : 'No', inline: true },
+      { name: 'Managed', value: emoji.managed ? 'Yes' : 'No', inline: true },
+      { name: 'Created', value: time(emoji.createdAt, 'R'), inline: true },
+      { 
+        name: 'Author', 
+        value: emoji.author?.tag ?? 'Unknown', 
+        inline: true 
+      },
+      { name: 'URL', value: `[View Image](${emoji.url})`, inline: true },
+      { name: 'Usage', value: `\`${emoji}\`` }
+    ],
+    color: '#5865F2',
+    timestamp: true
+  });
+  
+  await interaction.reply({ embeds: [embed] });
+}
+```
+
+### Emoji Usage Stats
+
+```typescript
+import { findEmoji } from '@magicyan/discord';
+import { Client, Collection, Message } from 'discord.js';
+
+const emojiUsage = new Collection<string, number>();
+
+const client = new Client({ intents: [...] });
+
+client.on('messageCreate', async (message: Message) => {
+  if (!message.guild) return;
+  
+  // Track custom emoji usage
+  const customEmojiRegex = /<a?:(\w+):(\d+)>/g;
+  const matches = message.content.matchAll(customEmojiRegex);
+  
+  for (const match of matches) {
+    const emojiId = match[2];
+    const currentCount = emojiUsage.get(emojiId) ?? 0;
+    emojiUsage.set(emojiId, currentCount + 1);
+  }
+});
+
+function getMostUsedEmojis(guild: Guild, limit = 10) {
+  const sorted = Array.from(emojiUsage.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+  
+  return sorted.map(([emojiId, count]) => {
+    const emoji = guild.emojis.cache.get(emojiId);
+    return {
+      emoji,
+      name: emoji?.name ?? 'Unknown',
+      count
+    };
+  });
+}
+```
+
+### Emoji Manager
+
+```typescript
+import { findEmoji } from '@magicyan/discord';
+import { ChatInputCommandInteraction, PermissionsBitField } from 'discord.js';
+
+async function handleManageEmojiCommand(interaction: ChatInputCommandInteraction) {
+  if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.ManageGuildExpressions)) {
+    await interaction.reply({
+      content: '❌ You need Manage Emojis permission!',
+      ephemeral: true
+    });
+    return;
+  }
+  
+  const action = interaction.options.getString('action', true);
+  const emojiName = interaction.options.getString('name', true);
+  
+  const emoji = findEmoji(interaction.guild!).byName(emojiName);
+  
+  switch (action) {
+    case 'delete': {
+      if (!emoji) {
+        await interaction.reply('Emoji not found!');
+        return;
+      }
+      
+      await emoji.delete();
+      await interaction.reply(`✅ Deleted emoji: \`${emojiName}\``);
+      break;
+    }
+    
+    case 'rename': {
+      if (!emoji) {
+        await interaction.reply('Emoji not found!');
+        return;
+      }
+      
+      const newName = interaction.options.getString('new_name', true);
+      await emoji.setName(newName);
+      await interaction.reply(`✅ Renamed \`${emojiName}\` to \`${newName}\``);
+      break;
+    }
+    
+    case 'create': {
+      const imageUrl = interaction.options.getString('image', true);
+      const newEmoji = await interaction.guild!.emojis.create({
+        attachment: imageUrl,
+        name: emojiName
+      });
+      
+      await interaction.reply(`✅ Created emoji: ${newEmoji}`);
+      break;
+    }
+  }
+}
+```
+
+## Best Practices
+
+<Warning>
+  Animated emojis count separately towards the emoji limit. Servers without Nitro boost have a lower limit.
+</Warning>
+
+<Tip>
+  When using emojis in embeds or messages, always check if the emoji exists first to avoid errors.
+</Tip>
+
+<Note>
+  Managed emojis (like Twitch subscriber emojis) cannot be edited or deleted by bots.
+</Note>
+
+## Emoji Limits by Server Level
+
+| Server Level | Static Emojis | Animated Emojis |
+|--------------|---------------|------------------|
+| Level 0      | 50            | 50               |
+| Level 1      | 100           | 100              |
+| Level 2      | 150           | 150              |
+| Level 3      | 250           | 250              |
+
+## API Reference
+
+### findEmoji(guildOrClient)
+
+<ParamField path="guildOrClient" type="Guild | Client" required>
+  The guild or client to search emojis in
+</ParamField>
+
+**Returns:** An object with search methods
+
+- `byName(name, animated?, and?)` - Find by emoji name with optional animation filter and additional filter
+- `byId(id, animated?)` - Find by emoji ID with optional animation filter
+- `byFilter(filter)` - Find by custom filter function
+
+**Examples:**
+
+```typescript
+const emoji = findEmoji(guild).byName('happy');
+const animatedEmoji = findEmoji(guild).byName('party', true);
+const emojiById = findEmoji(client).byId('1234567890');
+```

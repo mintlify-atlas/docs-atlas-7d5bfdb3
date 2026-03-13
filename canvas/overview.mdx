@@ -1,0 +1,184 @@
+---
+title: Canvas Overview
+description: Utilities for working with @napi-rs/canvas for Discord bots and image generation
+---
+
+# Canvas Overview
+
+The `@magicyan/canvas` package provides a comprehensive set of utilities for working with the `@napi-rs/canvas` library. It simplifies common canvas operations like creating gradients, applying filters, managing fonts, and creating avatar images with rounded corners.
+
+## Installation
+
+```bash
+npm install @magicyan/canvas @napi-rs/canvas
+```
+
+<Note>
+  `@napi-rs/canvas` is a peer dependency and must be installed separately.
+</Note>
+
+## Features
+
+### Gradient Utilities
+
+Simplify the creation and configuration of canvas gradients with an easy-to-use object-based API for color stops.
+
+```typescript
+import { createCanvas } from "@napi-rs/canvas";
+import { setGradientStops } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+const gradient = ctx.createLinearGradient(0, 0, 800, 0);
+setGradientStops(gradient, {
+  0: "#ff0000",
+  0.5: "purple",
+  1: "blue"
+});
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 600);
+```
+
+### Filter Functions
+
+Apply CSS-like filters to your canvas context with a clean, type-safe API.
+
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Combine multiple filters
+ctx.filter = [
+  Filter.blur(5),
+  Filter.brightness(120),
+  Filter.dropShadow(2, 2, 4, "black")
+].join(" ");
+
+ctx.drawImage(image, 0, 0);
+```
+
+### Font Management
+
+Manage canvas font properties with a fluent, chainable API using the `CanvasContextFont` class.
+
+```typescript
+import { CanvasContextFont } from "@magicyan/canvas";
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 24,
+  weight: "bold",
+  align: "center"
+});
+
+// Chain methods for updates
+font.setSize(32).setStyle("italic");
+
+ctx.fillText("Hello World", 400, 300);
+```
+
+### Avatar Creation
+
+Create circular or rounded avatar images with flexible corner radius options.
+
+```typescript
+import { loadImage } from "@napi-rs/canvas";
+import { createAvatar } from "@magicyan/canvas";
+
+const image = await loadImage("./avatar.png");
+
+// Circular avatar
+const avatar = createAvatar(image);
+
+// Custom radius
+const rounded = createAvatar(image, 50);
+
+// Different corners
+const custom = createAvatar(image, [50, 50, 0, 0]); // rounded top corners
+```
+
+## Type Safety
+
+The package includes comprehensive TypeScript type definitions:
+
+- **CSS Color Types**: Full autocomplete for CSS color names
+- **Font Weights**: Type-safe font weight options ("thin" to "black", or 100-900)
+- **Font Styles**: Predefined font style combinations
+- **Flexible String Types**: Use predefined types or custom strings with `StrOr<T>`
+
+```typescript
+import type { CssColors, ContextFontWeight } from "@magicyan/canvas";
+
+const color: CssColors = "coral"; // Autocomplete available
+const weight: ContextFontWeight = "semibold"; // Type-safe
+```
+
+## Use Cases
+
+The Canvas package is ideal for:
+
+- Discord bot welcome cards and rank cards
+- Dynamic social media image generation
+- Chart and graph rendering
+- Profile banners and avatars
+- Game leaderboards and stat cards
+- Custom badge and achievement images
+
+## Quick Example
+
+Here's a complete example creating a welcome card:
+
+```typescript
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { 
+  CanvasContextFont, 
+  Filter, 
+  setGradientStops 
+} from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 400);
+const ctx = canvas.getContext("2d");
+
+// Background gradient
+const gradient = ctx.createLinearGradient(0, 0, 800, 400);
+setGradientStops(gradient, {
+  0: "#667eea",
+  1: "#764ba2"
+});
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 400);
+
+// Avatar with shadow
+const avatar = await loadImage("./avatar.png");
+ctx.filter = Filter.dropShadow(0, 4, 8, "rgba(0,0,0,0.3)");
+ctx.drawImage(avatar, 50, 100, 200, 200);
+ctx.filter = "none";
+
+// Welcome text
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 48,
+  weight: "bold",
+  baseline: "middle"
+});
+ctx.fillStyle = "white";
+ctx.fillText("Welcome!", 300, 200);
+
+// Export
+const buffer = canvas.toBuffer("image/png");
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Gradients" icon="palette" href="/canvas/gradients">
+    Learn about gradient creation and color stops
+  </Card>
+  <Card title="Filters" icon="wand-magic-sparkles" href="/canvas/filters">
+    Apply visual effects with canvas filters
+  </Card>
+  <Card title="Fonts" icon="font" href="/canvas/fonts">
+    Manage text rendering with the font utilities
+  </Card>
+</CardGroup>

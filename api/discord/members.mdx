@@ -1,0 +1,162 @@
+---
+title: Members
+description: API reference for member-related functions in @magicyan/discord
+---
+
+## findMember
+
+Find guild members with flexible filtering options.
+
+```typescript
+function findMember(guild: Guild): MemberFinder
+```
+
+<ParamField path="guild" type="Guild" required>
+  The Discord guild to search members in
+</ParamField>
+
+<ResponseField name="return" type="MemberFinder">
+  An object with methods to find members by various criteria
+</ResponseField>
+
+### Finder Methods
+
+#### byGlobalName
+
+Find a member by their global display name.
+
+```typescript
+byGlobalName(
+  globalName: string,
+  and?: (member: GuildMember) => boolean
+): GuildMember | undefined
+```
+
+<ParamField path="globalName" type="string" required>
+  The global name to search for
+</ParamField>
+
+<ParamField path="and" type="(member) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byNickname
+
+Find a member by their guild-specific nickname.
+
+```typescript
+byNickname(
+  nickname: string,
+  and?: (member: GuildMember) => boolean
+): GuildMember | undefined
+```
+
+<ParamField path="nickname" type="string" required>
+  The nickname to search for
+</ParamField>
+
+<ParamField path="and" type="(member) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byUsername
+
+Find a member by their Discord username.
+
+```typescript
+byUsername(
+  username: string,
+  and?: (member: GuildMember) => boolean
+): GuildMember | undefined
+```
+
+<ParamField path="username" type="string" required>
+  The username to search for
+</ParamField>
+
+<ParamField path="and" type="(member) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byDisplayName
+
+Find a member by their display name (nickname if set, otherwise global name).
+
+```typescript
+byDisplayName(
+  displayName: string,
+  and?: (member: GuildMember) => boolean
+): GuildMember | undefined
+```
+
+<ParamField path="displayName" type="string" required>
+  The display name to search for
+</ParamField>
+
+<ParamField path="and" type="(member) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byId
+
+Find a member by their user ID.
+
+```typescript
+byId(id: string): GuildMember | undefined
+```
+
+<ParamField path="id" type="string" required>
+  The user ID to search for
+</ParamField>
+
+#### byFilter
+
+Find a member using a custom filter function.
+
+```typescript
+byFilter(
+  filter: (member: GuildMember) => boolean
+): GuildMember | undefined
+```
+
+<ParamField path="filter" type="(member) => boolean" required>
+  Custom filter function to match members
+</ParamField>
+
+### Examples
+
+```typescript
+import { findMember } from "@magicyan/discord";
+
+// Find by display name
+const member = findMember(guild).byDisplayName("John");
+
+// Find by username
+const user = findMember(guild).byUsername("john_doe");
+
+// Find by nickname
+const nick = findMember(guild).byNickname("JD");
+
+// Find by global name
+const global = findMember(guild).byGlobalName("John Doe");
+
+// Find by ID
+const memberById = findMember(guild).byId("123456789");
+
+// Use custom filter
+const moderator = findMember(guild).byFilter(
+  (member) => member.permissions.has("ModerateMembers")
+);
+
+// Find with additional condition
+const boostedMember = findMember(guild).byDisplayName(
+  "VIP",
+  (member) => member.premiumSince !== null
+);
+
+// Check if member has specific role
+const adminMember = findMember(guild).byUsername(
+  "admin",
+  (member) => member.roles.cache.has("ADMIN_ROLE_ID")
+);
+```

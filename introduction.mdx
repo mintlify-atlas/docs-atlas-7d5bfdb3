@@ -1,0 +1,117 @@
+---
+title: "Introduction"
+description: "A collection of TypeScript utility libraries for Discord bot development and general-purpose tasks"
+---
+
+## Welcome to Magicyan
+
+Magicyan is a comprehensive suite of TypeScript libraries designed to simplify Discord bot development and provide powerful utilities for common programming tasks. Built with type safety and developer experience in mind, Magicyan offers modular packages that work seamlessly together or independently.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running with Magicyan in minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Install the packages you need for your project
+  </Card>
+  <Card title="Core Utilities" icon="wrench" href="/core/overview">
+    Explore general-purpose utility functions
+  </Card>
+  <Card title="Discord Tools" icon="discord" href="/discord/overview">
+    Supercharge your Discord.js bot development
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="TypeScript First" icon="code">
+    Fully typed APIs with excellent IDE support and autocomplete
+  </Card>
+  <Card title="Modular Design" icon="cubes">
+    Use only what you need with independent, focused packages
+  </Card>
+  <Card title="Discord.js Integration" icon="discord">
+    Extended events, UI components, and helper functions for Discord bots
+  </Card>
+  <Card title="Canvas Utilities" icon="palette">
+    Gradients, filters, and font management for image generation
+  </Card>
+  <Card title="Minecraft APIs" icon="cube">
+    Fetch player skins, server status, and Mojang API data
+  </Card>
+  <Card title="General Utilities" icon="sparkles">
+    Date formatting, validation, math helpers, and more
+  </Card>
+</CardGroup>
+
+## Available Packages
+
+Magicyan is organized as a monorepo with multiple specialized packages:
+
+### @magicyan/core
+General-purpose utility functions for everyday TypeScript development including date formatting, validation, math operations, and async utilities.
+
+### @magicyan/discord
+Helper functions and utilities specifically designed for Discord.js bot development, including command handlers, embed builders, and component creators.
+
+### @magicyan/discord-events
+Extended event system for Discord.js with additional event types and enhanced event handling capabilities.
+
+### @magicyan/discord-ui
+Pre-built UI components for Discord messages, making it easy to create beautiful and interactive bot interfaces.
+
+### @magicyan/canvas
+Canvas manipulation utilities including gradient generation, image filters, and custom font management.
+
+### @magicyan/minecraft
+Integration with various Minecraft APIs for fetching player skins, server status, and Mojang API data.
+
+## Getting Started
+
+<Steps>
+  <Step title="Install your first package">
+    Choose the package that fits your needs and install it via npm, yarn, or pnpm
+    ```bash
+    npm install @magicyan/discord
+    ```
+  </Step>
+  
+  <Step title="Import and use">
+    Import the functions you need and start building
+    ```typescript
+    import { findCommand, commandMention } from '@magicyan/discord';
+    ```
+  </Step>
+  
+  <Step title="Explore the docs">
+    Browse the documentation to discover all available functions and utilities
+  </Step>
+</Steps>
+
+## Why Magicyan?
+
+Building Discord bots and web applications often involves writing the same utility functions over and over. Magicyan eliminates this repetition by providing:
+
+- **Battle-tested utilities** that have been refined through real-world usage
+- **Consistent APIs** across all packages for a smooth developer experience
+- **TypeScript-first design** with excellent type inference and editor support
+- **Zero-config setup** - install and start using immediately
+- **Modular architecture** - only bundle what you actually use
+
+<Note>
+All packages are compatible with Node.js 18+ and work seamlessly with Discord.js v14.
+</Note>
+
+## Community and Support
+
+Need help or want to contribute?
+
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/rinckodev/magicyan">
+    View source code, report issues, and contribute
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/core/check">
+    Detailed API documentation for all packages
+  </Card>
+</CardGroup>

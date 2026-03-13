@@ -1,0 +1,202 @@
+---
+title: Color Conversion
+description: Convert between hexadecimal and RGB color formats
+---
+
+## Overview
+
+The conversion module provides utilities for converting between hexadecimal color strings and numeric RGB values. These functions are particularly useful when working with Discord embed colors or any color manipulation tasks.
+
+## Functions
+
+### hexToRgb
+
+Converts a hexadecimal color string to its numeric RGB representation.
+
+```typescript
+function hexToRgb(color: string): number
+```
+
+<ParamField path="color" type="string" required>
+  A hexadecimal color string (e.g., `"#FFFFFF"`) or a plain string representing a hex value (e.g., `"FFFFFF"`). The `#` prefix is optional.
+</ParamField>
+
+**Returns:** `number` - The numeric RGB value parsed from the hexadecimal string.
+
+#### Examples
+
+```typescript
+import { hexToRgb } from "@magicyan/core";
+
+// With hash prefix
+const white = hexToRgb("#FFFFFF");
+console.log(white); // 16777215
+
+// Without hash prefix
+const black = hexToRgb("000000");
+console.log(black); // 0
+
+// Custom color
+const orange = hexToRgb("#FF5733");
+console.log(orange); // 16724755
+```
+
+#### Usage with Discord.js
+
+```typescript
+import { EmbedBuilder } from "discord.js";
+import { hexToRgb } from "@magicyan/core";
+
+const embed = new EmbedBuilder()
+  .setTitle("Custom Color Embed")
+  .setColor(hexToRgb("#FF5733"))
+  .setDescription("This embed uses a hex color converted to RGB");
+```
+
+<Tip>
+  Discord embed colors require numeric RGB values, making `hexToRgb` perfect for converting human-readable hex codes to the format Discord expects.
+</Tip>
+
+---
+
+### rgbToHex
+
+Converts a numeric RGB value to its hexadecimal color string representation.
+
+```typescript
+function rgbToHex(rgb: number, includeHash?: boolean): string
+```
+
+<ParamField path="rgb" type="number" required>
+  The numeric RGB value to convert (e.g., `16777215` for white).
+</ParamField>
+
+<ParamField path="includeHash" type="boolean" default="true">
+  Whether to prefix the result with `#`. When `true`, returns `"#ffffff"`. When `false`, returns `"ffffff"`.
+</ParamField>
+
+**Returns:** `string` - A hexadecimal color string representing the RGB value, optionally prefixed with `#`.
+
+#### Examples
+
+```typescript
+import { rgbToHex } from "@magicyan/core";
+
+// With hash (default)
+const hex1 = rgbToHex(16777215);
+console.log(hex1); // "#ffffff"
+
+// Without hash
+const hex2 = rgbToHex(0, false);
+console.log(hex2); // "000000"
+
+// Custom color
+const hex3 = rgbToHex(16724755);
+console.log(hex3); // "#ff5733"
+```
+
+#### Usage with Discord.js
+
+```typescript
+import { EmbedBuilder } from "discord.js";
+import { rgbToHex } from "@magicyan/core";
+
+const embed = new EmbedBuilder()
+  .setTitle("Color Information")
+  .setDescription("Embed color details");
+
+const embedColor = embed.data.color;
+if (embedColor) {
+  const hexColor = rgbToHex(embedColor);
+  console.log(`Embed color: ${hexColor}`);
+}
+```
+
+<Note>
+  The output is always lowercase hexadecimal. All values are zero-padded to ensure a 6-character color code.
+</Note>
+
+---
+
+## Bidirectional Conversion
+
+You can chain these functions for round-trip conversions:
+
+```typescript
+import { hexToRgb, rgbToHex } from "@magicyan/core";
+
+const originalHex = "#FF5733";
+const rgb = hexToRgb(originalHex);
+const convertedBack = rgbToHex(rgb);
+
+console.log(originalHex.toLowerCase()); // "#ff5733"
+console.log(convertedBack);             // "#ff5733"
+console.log(originalHex.toLowerCase() === convertedBack); // true
+```
+
+## Type Definitions
+
+The source code uses an internal type for color inputs:
+
+```typescript
+type Color = `#${string}` | string;
+```
+
+This allows both prefixed and non-prefixed hex strings as input to `hexToRgb`.
+
+## Common Use Cases
+
+<AccordionGroup>
+  <Accordion title="Dynamic Embed Colors">
+    ```typescript
+    import { hexToRgb } from "@magicyan/core";
+    import { EmbedBuilder } from "discord.js";
+
+    const colors = {
+      success: "#00FF00",
+      error: "#FF0000",
+      warning: "#FFA500",
+      info: "#0099FF"
+    };
+
+    function createEmbed(type: keyof typeof colors, message: string) {
+      return new EmbedBuilder()
+        .setColor(hexToRgb(colors[type]))
+        .setDescription(message);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Color Manipulation">
+    ```typescript
+    import { hexToRgb, rgbToHex } from "@magicyan/core";
+
+    function lightenColor(hexColor: string, amount: number): string {
+      const rgb = hexToRgb(hexColor);
+      const r = Math.min(255, ((rgb >> 16) & 0xFF) + amount);
+      const g = Math.min(255, ((rgb >> 8) & 0xFF) + amount);
+      const b = Math.min(255, (rgb & 0xFF) + amount);
+      const newRgb = (r << 16) | (g << 8) | b;
+      return rgbToHex(newRgb);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="User Color Preferences">
+    ```typescript
+    import { hexToRgb } from "@magicyan/core";
+
+    interface UserPreferences {
+      favoriteColor: string; // Stored as hex
+    }
+
+    function getUserEmbedColor(prefs: UserPreferences): number {
+      return hexToRgb(prefs.favoriteColor);
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  Always ensure your hex color strings are valid. Invalid hex values will result in `NaN` being returned from `hexToRgb`, which may cause errors when used with Discord embeds.
+</Warning>

@@ -1,0 +1,144 @@
+---
+title: Roles
+description: API reference for role-related functions in @magicyan/discord
+---
+
+## findRole
+
+Find roles in a guild with flexible filtering options.
+
+```typescript
+function findRole(guild: Guild): RoleFinder
+```
+
+<ParamField path="guild" type="Guild" required>
+  The Discord guild to search roles in
+</ParamField>
+
+<ResponseField name="return" type="RoleFinder">
+  An object with methods to find roles by various criteria
+</ResponseField>
+
+### Finder Methods
+
+#### byColor
+
+Find a role by its numeric color value.
+
+```typescript
+byColor(
+  color: number,
+  and?: (role: Role) => boolean
+): Role | undefined
+```
+
+<ParamField path="color" type="number" required>
+  The numeric color value to search for (e.g., `0xFF5454`)
+</ParamField>
+
+<ParamField path="and" type="(role) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byHexColor
+
+Find a role by its hexadecimal color string.
+
+```typescript
+byHexColor(
+  hexColor: string,
+  and?: (role: Role) => boolean
+): Role | undefined
+```
+
+<ParamField path="hexColor" type="string" required>
+  The hex color string to search for (e.g., `"#FF5454"`)
+</ParamField>
+
+<ParamField path="and" type="(role) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byName
+
+Find a role by its name.
+
+```typescript
+byName(
+  name: string,
+  and?: (role: Role) => boolean
+): Role | undefined
+```
+
+<ParamField path="name" type="string" required>
+  The role name to search for
+</ParamField>
+
+<ParamField path="and" type="(role) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byId
+
+Find a role by its ID.
+
+```typescript
+byId(id: string): Role | undefined
+```
+
+<ParamField path="id" type="string" required>
+  The role ID to search for
+</ParamField>
+
+#### byFilter
+
+Find a role using a custom filter function.
+
+```typescript
+byFilter(
+  filter: (role: Role) => boolean
+): Role | undefined
+```
+
+<ParamField path="filter" type="(role) => boolean" required>
+  Custom filter function to match roles
+</ParamField>
+
+### Examples
+
+```typescript
+import { findRole } from "@magicyan/discord";
+
+// Find by name
+const memberRole = findRole(guild).byName("Member");
+
+// Find by hex color
+const redRole = findRole(guild).byHexColor("#FF5454");
+
+// Find by numeric color
+const blueRole = findRole(guild).byColor(0x0000FF);
+
+// Find by ID
+const adminRole = findRole(guild).byId("123456789");
+
+// Use custom filter
+const hoistedRole = findRole(guild).byFilter(
+  (role) => role.hoist
+);
+
+// Find with additional condition
+const mentionableRole = findRole(guild).byName(
+  "Support",
+  (role) => role.mentionable
+);
+
+// Find roles with specific permissions
+const modRole = findRole(guild).byFilter(
+  (role) => role.permissions.has("ModerateMembers")
+);
+
+// Assign role to member
+if (memberRole) {
+  await member.roles.add(memberRole);
+}
+```

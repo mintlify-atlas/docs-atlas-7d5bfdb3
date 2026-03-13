@@ -1,0 +1,534 @@
+---
+title: Discord UI Components
+description: Complete reference for pagination, multimenu, and confirm components
+---
+
+# Components
+
+Detailed documentation for all Discord UI components including options, callbacks, and examples.
+
+## Pagination
+
+Navigate through multiple embeds with navigation buttons.
+
+### Usage
+
+```typescript
+import { pagination } from "@magicyan/discord-ui";
+import { EmbedBuilder, ButtonInteraction } from "discord.js";
+
+const embeds = [
+  new EmbedBuilder().setTitle("Page 1"),
+  new EmbedBuilder().setTitle("Page 2"),
+  new EmbedBuilder().setTitle("Page 3")
+];
+
+await pagination({
+  embeds,
+  render: async (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  onClick: async (interaction, embed) => {
+    await interaction.reply({
+      content: `You clicked on: ${embed.data.title}`,
+      ephemeral: true
+    });
+  },
+  onClose: async (interaction) => {
+    await interaction.update({ content: "Menu closed", embeds: [], components: [] });
+  },
+  time: 60000 // 60 seconds timeout
+});
+```
+
+### Options
+
+<ParamField path="embeds" type="EmbedBuilder[]" required>
+  Array of embeds to paginate through
+</ParamField>
+
+<ParamField path="render" type="function" required>
+  Function to render the message. Receives embeds and components, must return a Promise resolving to a Message.
+  
+  ```typescript
+  render: (embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder>[]) => Promise<Message>
+  ```
+</ParamField>
+
+<ParamField path="buttons" type="CustomizePaginationMenuButtons">
+  Customize button appearance for this instance
+  
+  ```typescript
+  buttons: {
+    next: { label: "Next Page", emoji: "➡️" },
+    previous: { label: "Previous Page", emoji: "⬅️" },
+    home: { label: "First Page" },
+    close: { label: "Close Menu" },
+    action: { label: "Action", style: ButtonStyle.Success }
+  }
+  ```
+</ParamField>
+
+<ParamField path="components" type="function">
+  Custom component layout function
+  
+  ```typescript
+  components: (buttons: PaginationMenuButtons) => ActionRowBuilder<ButtonBuilder>[]
+  ```
+</ParamField>
+
+<ParamField path="onClick" type="function">
+  Callback when the action button is clicked
+  
+  ```typescript
+  onClick: (interaction: ButtonInteraction, embed: EmbedBuilder) => void
+  ```
+</ParamField>
+
+<ParamField path="onClose" type="function">
+  Callback when the close button is clicked
+  
+  ```typescript
+  onClose: (interaction: ButtonInteraction) => void
+  ```
+</ParamField>
+
+<ParamField path="filter" type="function">
+  Filter function to control who can interact
+  
+  ```typescript
+  filter: (interaction: ButtonInteraction) => boolean
+  ```
+</ParamField>
+
+<ParamField path="time" type="number">
+  Timeout in milliseconds (default: no timeout)
+</ParamField>
+
+<ParamField path="onTimeout" type="function">
+  Callback when the collector times out
+  
+  ```typescript
+  onTimeout: () => void
+  ```
+</ParamField>
+
+### Default Buttons
+
+The pagination component includes these buttons by default:
+
+- **Previous** (`<`) - Go to previous page
+- **Home** (`.`) - Return to first page
+- **Next** (`>`) - Go to next page
+- **Close** (`✖`) - Close the menu
+- **Action** (`!`) - Custom action button (hidden by default)
+
+---
+
+## Multimenu
+
+Display items in multiple view modes (list, items, grid, blocks) with optional select menu for interaction.
+
+### Usage
+
+```typescript
+import { multimenu } from "@magicyan/discord-ui";
+import { EmbedBuilder } from "discord.js";
+
+const items = [
+  {
+    title: "Server Rules",
+    description: "Read our community guidelines",
+    color: "#5865F2",
+    thumbnail: "https://example.com/rules.png",
+    option: {
+      label: "View Rules",
+      value: "rules",
+      emoji: "📜"
+    }
+  },
+  {
+    title: "FAQ",
+    description: "Frequently asked questions",
+    color: "#57F287",
+    option: {
+      label: "View FAQ",
+      value: "faq",
+      emoji: "❓"
+    }
+  }
+];
+
+await multimenu({
+  items,
+  itemsPerPage: 5,
+  viewType: "list",
+  embed: new EmbedBuilder().setTitle("Help Menu").setColor("#5865F2"),
+  render: async (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  onSelect: async (interaction, item) => {
+    await interaction.reply({
+      content: `You selected: ${item.title}`,
+      ephemeral: true
+    });
+  }
+});
+```
+
+### Options
+
+<ParamField path="items" type="MultimenuItem[]" required>
+  Array of items to display
+  
+  ```typescript
+  interface MultimenuItem {
+    title?: string;
+    description: string;
+    color?: string | ColorResolvable;
+    thumbnail?: string;
+    option?: SelectMenuComponentOptionData;
+  }
+  ```
+</ParamField>
+
+<ParamField path="render" type="function" required>
+  Function to render the message
+  
+  ```typescript
+  render: (embeds: EmbedBuilder[], components: Components) => Promise<Message>
+  ```
+</ParamField>
+
+<ParamField path="viewType" type="'list' | 'items' | 'grid' | 'blocks'">
+  Display mode for items:
+  - **list**: Vertical list with full-width fields
+  - **items**: Two items per row with padding
+  - **grid**: Three items per row
+  - **blocks**: Each item as a separate embed
+  
+  Default: `"items"`
+</ParamField>
+
+<ParamField path="itemsPerPage" type="2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10">
+  Number of items to display per page (default: 10)
+</ParamField>
+
+<ParamField path="placeholder" type="string">
+  Placeholder text for the select menu (default: "Select item")
+</ParamField>
+
+<ParamField path="embed" type="EmbedBuilder">
+  Base embed to use (for list, items, and grid views)
+</ParamField>
+
+<ParamField path="buttons" type="CustomizeMultimenuMenuButtons">
+  Customize button appearance
+  
+  ```typescript
+  buttons: {
+    next: { label: "Next" },
+    previous: { label: "Previous" },
+    home: { label: "Home" },
+    close: { label: "Close" },
+    view: { emoji: "👀" } // Toggle view mode button
+  }
+  ```
+</ParamField>
+
+<ParamField path="components" type="function">
+  Custom component layout
+  
+  ```typescript
+  components: (buttons: MultimenuMenuButtons, selectMenu: StringSelectMenuBuilder) => Components
+  ```
+</ParamField>
+
+<ParamField path="onSelect" type="function">
+  Callback when an item is selected from the menu
+  
+  ```typescript
+  onSelect: (interaction: StringSelectMenuInteraction, item: MultimenuItem) => void
+  ```
+</ParamField>
+
+<ParamField path="onClose" type="function">
+  Callback when the close button is clicked
+  
+  ```typescript
+  onClose: (interaction: ButtonInteraction) => void
+  ```
+</ParamField>
+
+<ParamField path="filter" type="function">
+  Filter who can interact with the menu
+  
+  ```typescript
+  filter: (interaction: MessageComponentInteraction) => boolean
+  ```
+</ParamField>
+
+<ParamField path="time" type="number">
+  Timeout in milliseconds
+</ParamField>
+
+<ParamField path="onTimeout" type="function">
+  Callback when the collector times out
+</ParamField>
+
+### View Types
+
+The multimenu supports four different view types:
+
+<AccordionGroup>
+  <Accordion title="List View" icon="list">
+    Displays items as full-width fields in a vertical list. Best for detailed information.
+    
+    ```typescript
+    viewType: "list"
+    ```
+  </Accordion>
+  
+  <Accordion title="Items View" icon="grid-2">
+    Displays two items per row with padding. Balanced layout for moderate content.
+    
+    ```typescript
+    viewType: "items"
+    ```
+  </Accordion>
+  
+  <Accordion title="Grid View" icon="grid">
+    Displays three items per row in a compact grid. Good for many short items.
+    
+    ```typescript
+    viewType: "grid"
+    ```
+  </Accordion>
+  
+  <Accordion title="Blocks View" icon="window">
+    Each item as a separate embed with optional thumbnail. Best for rich visual content.
+    
+    ```typescript
+    viewType: "blocks"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+Users can toggle between view types using the view button (👀) during interaction.
+
+### Default Buttons
+
+- **Previous** (`<`) - Go to previous page
+- **Home** (`.`) - Return to first page
+- **Next** (`>`) - Go to next page
+- **View** (👀) - Toggle between view modes
+- **Close** (`✖`) - Close the menu
+
+---
+
+## Confirm
+
+Display a confirmation prompt with confirm and cancel buttons.
+
+### Usage
+
+```typescript
+import { confirm } from "@magicyan/discord-ui";
+import { ButtonInteraction } from "discord.js";
+
+await confirm({
+  render: async (components) => {
+    return interaction.reply({
+      content: "⚠️ Are you sure you want to delete this item?",
+      components,
+      fetchReply: true
+    });
+  },
+  onClick: async (interaction, isCancel) => {
+    if (isCancel) {
+      await interaction.update({
+        content: "❌ Action cancelled",
+        components: []
+      });
+    } else {
+      await interaction.update({
+        content: "✅ Item deleted successfully",
+        components: []
+      });
+      // Perform delete operation
+    }
+  },
+  time: 30000,
+  onTimeout: () => {
+    console.log("Confirmation timed out");
+  }
+});
+```
+
+### Options
+
+<ParamField path="render" type="function" required>
+  Function to render the confirmation message
+  
+  ```typescript
+  render: (components: ActionRowBuilder<ButtonBuilder>[]) => Promise<Message>
+  ```
+</ParamField>
+
+<ParamField path="onClick" type="function" required>
+  Callback when either button is clicked
+  
+  ```typescript
+  onClick: (interaction: ButtonInteraction, isCancel: boolean) => void
+  ```
+  
+  The `isCancel` parameter is `true` when the cancel button was clicked, `false` for confirm.
+</ParamField>
+
+<ParamField path="buttons" type="CustomizeConfirmPromptButtons">
+  Customize button appearance
+  
+  ```typescript
+  buttons: {
+    confirm: { label: "Yes", emoji: "✅" },
+    cancel: { label: "No", emoji: "❌" }
+  }
+  ```
+</ParamField>
+
+<ParamField path="components" type="function">
+  Custom component layout
+  
+  ```typescript
+  components: (buttons: ConfirmPromptButtons) => ActionRowBuilder<ButtonBuilder>[]
+  ```
+</ParamField>
+
+<ParamField path="filter" type="function">
+  Filter who can interact with the prompt
+  
+  ```typescript
+  filter: (interaction: ButtonInteraction) => boolean
+  ```
+</ParamField>
+
+<ParamField path="time" type="number">
+  Timeout in milliseconds
+</ParamField>
+
+<ParamField path="onTimeout" type="function">
+  Callback when the prompt times out
+  
+  ```typescript
+  onTimeout: () => void
+  ```
+</ParamField>
+
+### Default Buttons
+
+- **Confirm** (`✔`) - Confirm the action
+- **Cancel** (`✖`) - Cancel the action
+
+---
+
+## Advanced Examples
+
+### Restricting Access
+
+Only allow the command author to interact:
+
+```typescript
+const authorId = interaction.user.id;
+
+await pagination({
+  embeds,
+  render: async (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  filter: (i) => i.user.id === authorId
+});
+```
+
+### Custom Button Layout
+
+Create a custom button arrangement:
+
+```typescript
+await pagination({
+  embeds,
+  render: async (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  components: (buttons) => [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      buttons.previous,
+      buttons.next
+    ),
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      buttons.home,
+      buttons.close
+    )
+  ]
+});
+```
+
+### Dynamic Item Generation
+
+Generate multimenu items from data:
+
+```typescript
+const users = await fetchUsers();
+
+const items = users.map(user => ({
+  title: user.name,
+  description: `Level ${user.level} • ${user.xp} XP`,
+  color: user.color,
+  thumbnail: user.avatarUrl,
+  option: {
+    label: user.name,
+    value: user.id,
+    emoji: user.rank === 1 ? "🏆" : undefined
+  }
+}));
+
+await multimenu({
+  items,
+  viewType: "blocks",
+  render: async (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  onSelect: async (interaction, item) => {
+    const user = users.find(u => u.id === item.option?.value);
+    await interaction.reply({
+      content: `Viewing profile: ${user.name}`,
+      ephemeral: true
+    });
+  }
+});
+```
+
+### Handling Timeouts
+
+Clean up when interactions expire:
+
+```typescript
+await confirm({
+  render: async (components) => {
+    return interaction.reply({
+      content: "Confirm action?",
+      components,
+      fetchReply: true
+    });
+  },
+  onClick: async (interaction, isCancel) => {
+    // Handle click
+  },
+  time: 15000,
+  onTimeout: async () => {
+    await interaction.editReply({
+      content: "⏱️ Confirmation timed out",
+      components: []
+    });
+  }
+});
+```

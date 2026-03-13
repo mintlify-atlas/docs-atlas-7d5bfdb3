@@ -1,0 +1,633 @@
+---
+title: 'Components'
+description: 'Build interactive UI components'
+icon: 'grid'
+---
+
+## Overview
+
+The components module provides utilities for creating Discord UI components like buttons, modals, rows, sections, and more.
+
+## Buttons
+
+### createLinkButton
+
+Create link buttons that open URLs:
+
+```typescript
+import { createLinkButton } from '@magicyan/discord';
+
+// Simple link button
+const button = createLinkButton('https://example.com', 'Visit Website');
+
+// With emoji
+const buttonWithEmoji = createLinkButton(
+  'https://github.com',
+  'GitHub',
+  '🐈‍⬛'
+);
+
+// From object
+const detailedButton = createLinkButton({
+  url: 'https://discord.com',
+  label: 'Discord',
+  emoji: '🗣️'
+});
+
+await channel.send({
+  content: 'Check out these links:',
+  components: [createRow(button, buttonWithEmoji)]
+});
+```
+
+### wrapButtons
+
+Automatically organize buttons into rows:
+
+```typescript
+import { wrapButtons } from '@magicyan/discord';
+import { ButtonBuilder, ButtonStyle } from 'discord.js';
+
+const buttons = [
+  new ButtonBuilder({ customId: 'btn1', label: 'Button 1', style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: 'btn2', label: 'Button 2', style: ButtonStyle.Success }),
+  new ButtonBuilder({ customId: 'btn3', label: 'Button 3', style: ButtonStyle.Danger }),
+  new ButtonBuilder({ customId: 'btn4', label: 'Button 4', style: ButtonStyle.Secondary }),
+  new ButtonBuilder({ customId: 'btn5', label: 'Button 5', style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: 'btn6', label: 'Button 6', style: ButtonStyle.Success })
+];
+
+// Split into rows of max 3 buttons each
+const rows = wrapButtons(3, ...buttons);
+// Result: 2 rows, first with 3 buttons, second with 3 buttons
+
+await channel.send({
+  content: 'Select an option:',
+  components: rows
+});
+```
+
+## Rows
+
+### createRow
+
+Create action rows for organizing components:
+
+<Tabs>
+  <Tab title="Buttons">
+    ```typescript
+    import { createRow } from '@magicyan/discord';
+    import { ButtonBuilder, ButtonStyle } from 'discord.js';
+
+    const row = createRow(
+      new ButtonBuilder({
+        customId: 'accept',
+        label: 'Accept',
+        style: ButtonStyle.Success
+      }),
+      new ButtonBuilder({
+        customId: 'decline',
+        label: 'Decline',
+        style: ButtonStyle.Danger
+      })
+    );
+
+    await interaction.reply({
+      content: 'Do you accept?',
+      components: [row]
+    });
+    ```
+  </Tab>
+  
+  <Tab title="Select Menu">
+    ```typescript
+    import { createRow } from '@magicyan/discord';
+    import { StringSelectMenuBuilder } from 'discord.js';
+
+    const menu = new StringSelectMenuBuilder({
+      customId: 'color_select',
+      placeholder: 'Choose a color',
+      options: [
+        { label: 'Red', value: 'red', emoji: '🔴' },
+        { label: 'Blue', value: 'blue', emoji: '🔵' },
+        { label: 'Green', value: 'green', emoji: '🟢' }
+      ]
+    });
+
+    const row = createRow(menu);
+
+    await interaction.reply({
+      content: 'Select your favorite color:',
+      components: [row]
+    });
+    ```
+  </Tab>
+  
+  <Tab title="Conditional Components">
+    ```typescript
+    import { createRow } from '@magicyan/discord';
+    import { ButtonBuilder, ButtonStyle } from 'discord.js';
+
+    const isAdmin = member.permissions.has('Administrator');
+
+    const row = createRow(
+      new ButtonBuilder({
+        customId: 'view',
+        label: 'View',
+        style: ButtonStyle.Primary
+      }),
+      // Only include admin button if user is admin
+      isAdmin && new ButtonBuilder({
+        customId: 'admin',
+        label: 'Admin Panel',
+        style: ButtonStyle.Danger
+      })
+    );
+    // Falsy values are automatically filtered out
+    ```
+  </Tab>
+</Tabs>
+
+## Modals
+
+### createModal
+
+Create modal dialogs for user input:
+
+```typescript
+import { createModal, createLabel, createTextInput } from '@magicyan/discord';
+import { TextInputStyle } from 'discord.js';
+
+const modal = createModal(
+  'feedback_modal',
+  'Submit Feedback',
+  createLabel({
+    label: 'Feedback Type',
+    component: createTextInput({
+      customId: 'type',
+      style: TextInputStyle.Short,
+      placeholder: 'Bug report, suggestion, etc.'
+    })
+  }),
+  createLabel({
+    label: 'Details',
+    description: 'Please provide as much detail as possible',
+    component: createTextInput({
+      customId: 'details',
+      style: TextInputStyle.Paragraph,
+      placeholder: 'Describe your feedback here...',
+      required: true
+    })
+  }),
+  'Thank you for your feedback!' // Text displays at bottom
+);
+
+await interaction.showModal(modal);
+```
+
+### modalFieldsToRecord
+
+Convert modal submission to a record:
+
+```typescript
+import { modalFieldsToRecord } from '@magicyan/discord';
+import { ModalSubmitInteraction } from 'discord.js';
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isModalSubmit()) return;
+  if (interaction.customId !== 'feedback_modal') return;
+  
+  // Extract fields as simple object
+  const fields = modalFieldsToRecord(interaction.fields);
+  
+  console.log(fields.type);    // string
+  console.log(fields.details); // string
+  
+  // With parser for type conversion
+  const parsed = modalFieldsToRecord(interaction.fields, (record) => ({
+    type: record.type.toLowerCase(),
+    details: record.details.trim(),
+    timestamp: Date.now()
+  }));
+  
+  await interaction.reply('Thank you for your feedback!');
+});
+```
+
+## Sections
+
+### createSection
+
+Create sections with content and accessories:
+
+<Tabs>
+  <Tab title="With Button">
+    ```typescript
+    import { createSection } from '@magicyan/discord';
+    import { ButtonBuilder, ButtonStyle } from 'discord.js';
+
+    const section = createSection({
+      content: 'Welcome to our server! Click below to get started.',
+      button: new ButtonBuilder({
+        customId: 'start',
+        label: 'Get Started',
+        style: ButtonStyle.Primary
+      })
+    });
+
+    await channel.send({ components: [section] });
+    ```
+  </Tab>
+  
+  <Tab title="With Thumbnail">
+    ```typescript
+    import { createSection } from '@magicyan/discord';
+
+    const section = createSection({
+      content: [
+        'Server Update v2.0',
+        '',
+        'We have added new features:',
+        '• Custom roles',
+        '• Voice channels',
+        '• New bots'
+      ],
+      thumbnail: 'https://example.com/update-icon.png'
+    });
+
+    await channel.send({ components: [section] });
+    ```
+  </Tab>
+  
+  <Tab title="Simple">
+    ```typescript
+    import { createSection } from '@magicyan/discord';
+
+    // Content only
+    const section = createSection({ content: 'Simple message' });
+
+    // With accessory (button or thumbnail)
+    const sectionWithButton = createSection(
+      'Click the button below',
+      new ButtonBuilder({
+        customId: 'action',
+        label: 'Click Me',
+        style: ButtonStyle.Success
+      })
+    );
+    ```
+  </Tab>
+</Tabs>
+
+## Text Components
+
+### createTextDisplay
+
+Create text display components:
+
+```typescript
+import { createTextDisplay } from '@magicyan/discord';
+
+const text1 = createTextDisplay('Hello World!');
+const text2 = createTextDisplay('With custom ID', 123);
+
+// Use in sections or containers
+const section = new SectionBuilder()
+  .addTextDisplayComponents(text1, text2);
+```
+
+### createLabel
+
+Create labels for modal inputs:
+
+```typescript
+import { createLabel, createTextInput } from '@magicyan/discord';
+import { TextInputStyle } from 'discord.js';
+
+// Simple label
+const label1 = createLabel('Username');
+
+// With description
+const label2 = createLabel(
+  'Email',
+  'We will never share your email with anyone'
+);
+
+// With component
+const label3 = createLabel({
+  label: 'Password',
+  description: 'Must be at least 8 characters',
+  component: createTextInput({
+    customId: 'password',
+    style: TextInputStyle.Short,
+    minLength: 8
+  })
+});
+```
+
+## Real-World Examples
+
+### Confirmation Dialog
+
+```typescript
+import { createEmbed, createRow } from '@magicyan/discord';
+import { ButtonBuilder, ButtonStyle, ChatInputCommandInteraction } from 'discord.js';
+
+async function confirmAction(
+  interaction: ChatInputCommandInteraction,
+  message: string
+): Promise<boolean> {
+  const embed = createEmbed({
+    title: '⚠️ Confirmation Required',
+    description: message,
+    color: '#FFA500'
+  });
+  
+  const row = createRow(
+    new ButtonBuilder({
+      customId: 'confirm',
+      label: 'Confirm',
+      style: ButtonStyle.Success
+    }),
+    new ButtonBuilder({
+      customId: 'cancel',
+      label: 'Cancel',
+      style: ButtonStyle.Danger
+    })
+  );
+  
+  const reply = await interaction.reply({
+    embeds: [embed],
+    components: [row],
+    ephemeral: true
+  });
+  
+  try {
+    const buttonInteraction = await reply.awaitMessageComponent({
+      filter: i => i.user.id === interaction.user.id,
+      time: 30000
+    });
+    
+    await buttonInteraction.update({ components: [] });
+    return buttonInteraction.customId === 'confirm';
+  } catch {
+    await interaction.editReply({ components: [] });
+    return false;
+  }
+}
+
+// Usage
+const confirmed = await confirmAction(
+  interaction,
+  'Are you sure you want to delete this channel?'
+);
+
+if (confirmed) {
+  // Proceed with action
+}
+```
+
+### Paginated List
+
+```typescript
+import { createEmbed, createRow } from '@magicyan/discord';
+import { ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
+
+async function createPaginatedList(
+  interaction: ChatInputCommandInteraction,
+  items: string[],
+  itemsPerPage = 10
+) {
+  let currentPage = 0;
+  const totalPages = Math.ceil(items.length / itemsPerPage);
+  
+  const generateEmbed = (page: number) => {
+    const start = page * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageItems = items.slice(start, end);
+    
+    return createEmbed({
+      title: 'List',
+      description: pageItems.map((item, i) => 
+        `${start + i + 1}. ${item}`
+      ).join('\n'),
+      footer: { text: `Page ${page + 1}/${totalPages}` },
+      color: '#5865F2'
+    });
+  };
+  
+  const generateButtons = (page: number) => createRow(
+    new ButtonBuilder({
+      customId: 'first',
+      label: '⏪ First',
+      style: ButtonStyle.Primary,
+      disabled: page === 0
+    }),
+    new ButtonBuilder({
+      customId: 'prev',
+      label: '◀️ Previous',
+      style: ButtonStyle.Primary,
+      disabled: page === 0
+    }),
+    new ButtonBuilder({
+      customId: 'next',
+      label: 'Next ▶️',
+      style: ButtonStyle.Primary,
+      disabled: page === totalPages - 1
+    }),
+    new ButtonBuilder({
+      customId: 'last',
+      label: 'Last ⏩',
+      style: ButtonStyle.Primary,
+      disabled: page === totalPages - 1
+    })
+  );
+  
+  const message = await interaction.reply({
+    embeds: [generateEmbed(currentPage)],
+    components: [generateButtons(currentPage)],
+    fetchReply: true
+  });
+  
+  const collector = message.createMessageComponentCollector({
+    componentType: ComponentType.Button,
+    time: 300000 // 5 minutes
+  });
+  
+  collector.on('collect', async (i) => {
+    if (i.user.id !== interaction.user.id) {
+      await i.reply({ content: 'This is not your menu!', ephemeral: true });
+      return;
+    }
+    
+    switch (i.customId) {
+      case 'first': currentPage = 0; break;
+      case 'prev': currentPage--; break;
+      case 'next': currentPage++; break;
+      case 'last': currentPage = totalPages - 1; break;
+    }
+    
+    await i.update({
+      embeds: [generateEmbed(currentPage)],
+      components: [generateButtons(currentPage)]
+    });
+  });
+  
+  collector.on('end', () => {
+    interaction.editReply({ components: [] });
+  });
+}
+```
+
+### Role Selection Menu
+
+```typescript
+import { createRow } from '@magicyan/discord';
+import { StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
+
+function createRoleMenu(roles: Role[]) {
+  const options = roles.map(role =>
+    new StringSelectMenuOptionBuilder()
+      .setLabel(role.name)
+      .setValue(role.id)
+      .setDescription(`Get the ${role.name} role`)
+      .setEmoji(role.unicodeEmoji ?? '🔸')
+  );
+  
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('role_select')
+    .setPlaceholder('Select roles to add')
+    .setMinValues(0)
+    .setMaxValues(options.length)
+    .addOptions(options);
+  
+  return createRow(menu);
+}
+
+// Handle selection
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isStringSelectMenu()) return;
+  if (interaction.customId !== 'role_select') return;
+  
+  const member = interaction.member as GuildMember;
+  const selectedRoles = interaction.values;
+  
+  // Add selected roles
+  for (const roleId of selectedRoles) {
+    await member.roles.add(roleId);
+  }
+  
+  await interaction.reply({
+    content: `✅ Updated your roles!`,
+    ephemeral: true
+  });
+});
+```
+
+### Feedback Form
+
+```typescript
+import { 
+  createModal, 
+  createLabel, 
+  createTextInput,
+  modalFieldsToRecord,
+  createEmbed
+} from '@magicyan/discord';
+import { TextInputStyle } from 'discord.js';
+
+// Show modal
+await interaction.showModal(
+  createModal(
+    'feedback',
+    'Feedback Form',
+    createLabel({
+      label: 'Category',
+      component: createTextInput({
+        customId: 'category',
+        style: TextInputStyle.Short,
+        placeholder: 'Bug, Suggestion, Question, etc.'
+      })
+    }),
+    createLabel({
+      label: 'Your Feedback',
+      description: 'Tell us what you think!',
+      component: createTextInput({
+        customId: 'feedback',
+        style: TextInputStyle.Paragraph,
+        placeholder: 'Write your feedback here...',
+        minLength: 10,
+        maxLength: 1000
+      })
+    })
+  )
+);
+
+// Handle submission
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isModalSubmit()) return;
+  if (interaction.customId !== 'feedback') return;
+  
+  const { category, feedback } = modalFieldsToRecord(interaction.fields);
+  
+  // Send to feedback channel
+  const feedbackChannel = interaction.guild!.channels.cache.find(
+    ch => ch.name === 'feedback'
+  );
+  
+  if (feedbackChannel?.isTextBased()) {
+    const embed = createEmbed({
+      title: `📢 New Feedback: ${category}`,
+      description: feedback,
+      author: createEmbedAuthor(interaction.user),
+      color: '#5865F2',
+      timestamp: true
+    });
+    
+    await feedbackChannel.send({ embeds: [embed] });
+  }
+  
+  await interaction.reply({
+    content: '✅ Thank you for your feedback!',
+    ephemeral: true
+  });
+});
+```
+
+## Best Practices
+
+<Warning>
+  Action rows can contain a maximum of 5 buttons or 1 select menu. Use `wrapButtons` to automatically handle overflow.
+</Warning>
+
+<Tip>
+  Use conditional rendering in `createRow` by passing boolean values. Falsy values are automatically filtered out.
+</Tip>
+
+<Note>
+  Always set reasonable timeouts for component collectors to prevent memory leaks.
+</Note>
+
+## API Reference
+
+### Button Functions
+- `createLinkButton(url, label?, emoji?)` - Create link button from URL
+- `createLinkButton(data)` - Create link button from object
+- `wrapButtons(maxPerRow, ...buttons)` - Organize buttons into rows
+
+### Row Functions
+- `createRow(...components)` - Create action row with components
+
+### Modal Functions
+- `createModal(customId, title, ...components)` - Create modal dialog
+- `createModal(data)` - Create modal from object
+- `modalFieldsToRecord(fields, parse?)` - Convert modal fields to object
+
+### Section Functions
+- `createSection(content, accessory)` - Create section with accessory
+- `createSection(data)` - Create section from object
+
+### Text Functions
+- `createTextDisplay(content, id?)` - Create text display component
+- `createLabel(label, description?, component?, id?)` - Create label for input
+- `createLabel(data)` - Create label from object

@@ -1,0 +1,202 @@
+---
+title: 'Sleep Functions'
+description: 'Async delay utilities with optional return values'
+---
+
+## sleep
+
+Creates an asynchronous delay (sleep) for a specified duration in milliseconds. Optionally returns a value or the result of a function after the delay.
+
+```typescript
+function sleep<V>(time: number, value?: V): Promise<ResolveSleepValue<V>>
+
+interface sleep {
+  <V>(time: number, value?: V): Promise<ResolveSleepValue<V>>;
+  seconds<V>(time: number, value?: V): Promise<ResolveSleepValue<V>>;
+  minutes<V>(time: number, value?: V): Promise<ResolveSleepValue<V>>;
+  hours<V>(time: number, value?: V): Promise<ResolveSleepValue<V>>;
+}
+```
+
+<ParamField path="time" type="number" required>
+  The duration to sleep in milliseconds.
+</ParamField>
+
+<ParamField path="value" type="V">
+  Optional value to return after the delay. If a function is provided, it will be called and its return value will be returned.
+</ParamField>
+
+<ResponseField name="result" type="Promise<ResolveSleepValue<V>>">
+  A promise that resolves after the specified delay. If `value` is a function, returns the function's return value. Otherwise, returns the value itself.
+</ResponseField>
+
+### Basic Usage
+
+```typescript
+import { sleep } from "@magicyan/core";
+
+// Simple delay
+await sleep(1000); // Waits 1 second
+
+// Delay with return value
+const result = await sleep(2000, "Done!");
+console.log(result); // "Done!" after 2 seconds
+
+// Delay with function
+const value = await sleep(1500, () => {
+  return 42;
+});
+console.log(value); // 42 after 1.5 seconds
+```
+
+---
+
+## sleep.seconds
+
+Creates an asynchronous delay for a specified number of seconds.
+
+```typescript
+sleep.seconds<V>(time: number, value?: V): Promise<ResolveSleepValue<V>>
+```
+
+<ParamField path="time" type="number" required>
+  The duration to sleep in seconds.
+</ParamField>
+
+<ParamField path="value" type="V">
+  Optional value to return after the delay.
+</ParamField>
+
+<ResponseField name="result" type="Promise<ResolveSleepValue<V>>">
+  A promise that resolves after the specified delay.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { sleep } from "@magicyan/core";
+
+await sleep.seconds(5); // Waits 5 seconds
+
+const message = await sleep.seconds(3, "Hello!");
+console.log(message); // "Hello!" after 3 seconds
+```
+
+---
+
+## sleep.minutes
+
+Creates an asynchronous delay for a specified number of minutes.
+
+```typescript
+sleep.minutes<V>(time: number, value?: V): Promise<ResolveSleepValue<V>>
+```
+
+<ParamField path="time" type="number" required>
+  The duration to sleep in minutes.
+</ParamField>
+
+<ParamField path="value" type="V">
+  Optional value to return after the delay.
+</ParamField>
+
+<ResponseField name="result" type="Promise<ResolveSleepValue<V>>">
+  A promise that resolves after the specified delay.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { sleep } from "@magicyan/core";
+
+await sleep.minutes(2); // Waits 2 minutes
+
+const data = await sleep.minutes(1, () => {
+  return { ready: true };
+});
+console.log(data); // { ready: true } after 1 minute
+```
+
+---
+
+## sleep.hours
+
+Creates an asynchronous delay for a specified number of hours.
+
+```typescript
+sleep.hours<V>(time: number, value?: V): Promise<ResolveSleepValue<V>>
+```
+
+<ParamField path="time" type="number" required>
+  The duration to sleep in hours.
+</ParamField>
+
+<ParamField path="value" type="V">
+  Optional value to return after the delay.
+</ParamField>
+
+<ResponseField name="result" type="Promise<ResolveSleepValue<V>>">
+  A promise that resolves after the specified delay.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { sleep } from "@magicyan/core";
+
+await sleep.hours(1); // Waits 1 hour
+
+const status = await sleep.hours(0.5, "Half hour passed");
+console.log(status); // "Half hour passed" after 30 minutes
+```
+
+---
+
+## Practical Use Cases
+
+### Retry with Exponential Backoff
+
+```typescript
+import { sleep } from "@magicyan/core";
+
+async function fetchWithRetry(url: string, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url);
+      return response;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await sleep(Math.pow(2, i) * 1000); // 1s, 2s, 4s
+    }
+  }
+}
+```
+
+### Delayed Response
+
+```typescript
+import { sleep } from "@magicyan/core";
+
+async function processRequest() {
+  console.log("Processing...");
+  
+  const result = await sleep.seconds(3, () => {
+    return { status: "complete", data: [1, 2, 3] };
+  });
+  
+  return result;
+}
+```
+
+### Rate Limiting
+
+```typescript
+import { sleep } from "@magicyan/core";
+
+async function processItems(items: string[]) {
+  for (const item of items) {
+    await processItem(item);
+    await sleep.seconds(1); // Wait 1 second between items
+  }
+}
+```

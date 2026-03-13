@@ -1,0 +1,580 @@
+---
+title: Embeds
+description: API reference for Discord embed creation and manipulation
+---
+
+## createEmbed
+
+Create a feature-rich embed with extended functionality.
+
+```typescript
+function createEmbed<B extends boolean>(
+  options: CreateEmbedOptions<B>
+): EmbedPlusBuilderReturn<B>
+```
+
+<ParamField path="options" type="CreateEmbedOptions<B>" required>
+  Embed configuration:
+  - `title`: Embed title
+  - `color`: Embed color (hex string, ColorResolvable, or number)
+  - `description`: Embed description (string or array of strings)
+  - `url`: Embed URL
+  - `thumbnail`: Thumbnail image
+  - `image`: Main image
+  - `fields`: Array of embed fields
+  - `timestamp`: Timestamp (Date, string, number, or boolean for current time)
+  - `footer`: Footer data or string
+  - `author`: Author data
+  - `extends`: Base embed to extend from
+  - `mergeFields`: Whether to merge fields from extended embed
+  - `array`: If `true`, returns array of embeds
+  - `from`: Interaction or message to copy embeds from
+  - `fromIndex`: Index of embed to extend when using `from`
+</ParamField>
+
+<ResponseField name="return" type="EmbedPlusBuilder | EmbedPlusBuilder[]">
+  An `EmbedPlusBuilder` instance, or an array if `array: true`
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createEmbed } from "@magicyan/discord";
+
+// Simple embed
+const embed = createEmbed({
+  title: "Welcome!",
+  description: "Thanks for joining our server",
+  color: "#00FF00"
+});
+
+await interaction.reply({ embeds: [embed] });
+
+// Embed with multiple features
+const embed2 = createEmbed({
+  title: "User Profile",
+  description: ["Name: John Doe", "Level: 42", "Rank: Gold"],
+  color: 0xFFD700,
+  thumbnail: member.displayAvatarURL(),
+  fields: [
+    { name: "Joined", value: "2024-01-01", inline: true },
+    { name: "Messages", value: "1,234", inline: true }
+  ],
+  footer: "Profile requested by " + interaction.user.username,
+  timestamp: true
+});
+
+// Extend existing embed
+const extended = createEmbed({
+  extends: originalEmbed,
+  description: "Updated description",
+  mergeFields: true
+});
+
+// Create from interaction message
+const copied = createEmbed({
+  from: interaction,
+  fromIndex: 0
+});
+```
+
+---
+
+## EmbedPlusBuilder
+
+An extended `EmbedBuilder` with additional utility methods.
+
+### Properties
+
+#### fields
+
+An `EmbedPlusFields` instance for advanced field manipulation.
+
+```typescript
+embed.fields: EmbedPlusFields
+```
+
+### Methods
+
+#### update
+
+Update the embed with new data while preserving existing properties.
+
+```typescript
+update(data: EmbedPlusData): this
+```
+
+<ParamField path="data" type="EmbedPlusData" required>
+  Data to update the embed with
+</ParamField>
+
+```typescript
+embed.update({
+  title: "New Title",
+  color: "#FF0000"
+});
+```
+
+#### has
+
+Check if the embed has a specific property set.
+
+```typescript
+has(property: keyof EmbedPlusData): boolean
+```
+
+<ParamField path="property" type="keyof EmbedPlusData" required>
+  Property name to check
+</ParamField>
+
+```typescript
+if (embed.has("thumbnail")) {
+  console.log("Embed has a thumbnail");
+}
+```
+
+#### toArray
+
+Convert the embed to a single-element array.
+
+```typescript
+toArray(): EmbedPlusBuilder[]
+```
+
+```typescript
+const embeds = embed.toArray();
+await channel.send({ embeds });
+```
+
+#### toString
+
+Convert the embed to a JSON string.
+
+```typescript
+toString(space?: number): string
+```
+
+<ParamField path="space" type="number">
+  Number of spaces for indentation. Defaults to `2`
+</ParamField>
+
+```typescript
+const json = embed.toString();
+console.log(json);
+```
+
+#### toAttachment
+
+Convert the embed to a JSON attachment file.
+
+```typescript
+toAttachment(
+  data?: AttachmentData,
+  space?: number
+): AttachmentBuilder
+```
+
+<ParamField path="data" type="AttachmentData">
+  Attachment metadata. Defaults to `{ name: "embed.json" }`
+</ParamField>
+
+<ParamField path="space" type="number">
+  JSON indentation spaces. Defaults to `2`
+</ParamField>
+
+```typescript
+const attachment = embed.toAttachment({ name: "profile.json" });
+await channel.send({ files: [attachment] });
+```
+
+#### setAsset
+
+Set the thumbnail or image asset.
+
+```typescript
+setAsset(
+  asset: "thumbnail" | "image",
+  source: EmbedPlusAssetData
+): this
+```
+
+<ParamField path="asset" type="'thumbnail' | 'image'" required>
+  Asset type to set
+</ParamField>
+
+<ParamField path="source" type="EmbedPlusAssetData" required>
+  Asset source (URL, Attachment, or AttachmentBuilder)
+</ParamField>
+
+```typescript
+embed.setAsset("thumbnail", "https://example.com/thumb.png");
+embed.setAsset("image", new AttachmentBuilder("./image.png"));
+```
+
+#### setElementImageURL
+
+Set the image URL for embed elements.
+
+```typescript
+setElementImageURL(
+  element: "thumbnail" | "image" | "author" | "footer",
+  url: string | null
+): this
+```
+
+<ParamField path="element" type="'thumbnail' | 'image' | 'author' | 'footer'" required>
+  Element to update
+</ParamField>
+
+<ParamField path="url" type="string | null" required>
+  Image URL to set (or `null` to remove)
+</ParamField>
+
+```typescript
+embed.setElementImageURL("author", member.displayAvatarURL());
+embed.setElementImageURL("footer", guild.iconURL());
+```
+
+---
+
+## EmbedPlusFields
+
+Advanced field manipulation for embeds.
+
+### Properties
+
+#### length
+
+Get the number of fields.
+
+```typescript
+embed.fields.length: number
+```
+
+#### record
+
+Get all fields as a record object.
+
+```typescript
+embed.fields.record: Record<string, string | undefined>
+```
+
+```typescript
+const fieldData = embed.fields.record;
+console.log(fieldData["Username"]); // Field value
+```
+
+### Methods
+
+#### get
+
+Get a field by name or index.
+
+```typescript
+get(name: string): EmbedPlusFieldData | undefined
+get(index: number): EmbedPlusFieldData | undefined
+```
+
+<ParamField path="name" type="string">
+  Field name to find
+</ParamField>
+
+<ParamField path="index" type="number">
+  Field index (0-based)
+</ParamField>
+
+```typescript
+const field = embed.fields.get("Status");
+const firstField = embed.fields.get(0);
+```
+
+#### find
+
+Find a field using a predicate function.
+
+```typescript
+find(
+  predicate: (field, index, fields) => boolean
+): EmbedPlusFieldData | undefined
+```
+
+```typescript
+const inlineField = embed.fields.find((field) => field.inline === true);
+```
+
+#### push
+
+Add fields to the end of the field list.
+
+```typescript
+push(...fields: Partial<EmbedPlusFieldData>[]): this
+```
+
+```typescript
+embed.fields.push(
+  { name: "Field 1", value: "Value 1" },
+  { name: "Field 2", value: "Value 2", inline: true }
+);
+```
+
+#### set
+
+Replace all fields with new ones.
+
+```typescript
+set(...fields: Partial<EmbedPlusFieldData>[]): this
+```
+
+```typescript
+embed.fields.set(
+  { name: "New Field", value: "New Value" }
+);
+```
+
+#### insert
+
+Insert fields at a specific index.
+
+```typescript
+insert(index: number, ...fields: Partial<EmbedPlusFieldData>[]): void
+```
+
+```typescript
+embed.fields.insert(1, { name: "Inserted", value: "At index 1" });
+```
+
+#### update
+
+Update an existing field.
+
+```typescript
+update(
+  predicate: string | number | ((field, index, fields) => boolean),
+  field: Partial<EmbedPlusFieldData>
+): boolean
+```
+
+```typescript
+// Update by name
+embed.fields.update("Status", { value: "Online" });
+
+// Update by index
+embed.fields.update(0, { inline: true });
+
+// Update by predicate
+embed.fields.update(
+  (field) => field.name.startsWith("Old"),
+  { value: "Updated" }
+);
+```
+
+#### delete
+
+Delete a field.
+
+```typescript
+delete(
+  predicate: string | number | ((field, index, fields) => boolean)
+): boolean
+```
+
+```typescript
+// Delete by name
+embed.fields.delete("Status");
+
+// Delete by index
+embed.fields.delete(0);
+
+// Delete by predicate
+embed.fields.delete((field) => field.value === "N/A");
+```
+
+#### clear
+
+Remove all fields.
+
+```typescript
+clear(): this
+```
+
+```typescript
+embed.fields.clear();
+```
+
+#### map
+
+Map over fields and return an array.
+
+```typescript
+map<U>(callback: (field, index, fields) => U): U[]
+```
+
+```typescript
+const fieldNames = embed.fields.map((field) => field.name);
+```
+
+#### toArray
+
+Convert fields to an array.
+
+```typescript
+toArray(): EmbedPlusFieldData[]
+```
+
+```typescript
+const fieldsArray = embed.fields.toArray();
+```
+
+---
+
+## createEmbedAuthor
+
+Create embed author data from Discord entities.
+
+```typescript
+function createEmbedAuthor<T extends AuthorType>(
+  type: T,
+  options?: CreateEmbedAuthorOptions<T>
+): EmbedAuthorData
+```
+
+<ParamField path="type" type="Guild | GuildMember | User | ClientUser" required>
+  The Discord entity to create author data from
+</ParamField>
+
+<ParamField path="options" type="CreateEmbedAuthorOptions<T>">
+  Author configuration:
+  - `property`: Property to use for name (e.g., `"username"`, `"displayName"`)
+  - `prefix`: Text to prepend to name
+  - `suffix`: Text to append to name
+  - `url`: Author URL
+  - `iconURL`: Custom icon URL
+  - Image options: `extension`, `forceStatic`, `size`
+</ParamField>
+
+<ResponseField name="return" type="EmbedAuthorData">
+  Embed author data with name, iconURL, and optional URL
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createEmbedAuthor, createEmbed } from "@magicyan/discord";
+
+const embed = createEmbed({
+  title: "User Info",
+  author: createEmbedAuthor(interaction.user)
+});
+
+// From guild member with custom property
+const memberAuthor = createEmbedAuthor(member, {
+  property: "nickname",
+  prefix: "👤 "
+});
+
+// From guild
+const guildAuthor = createEmbedAuthor(guild, {
+  property: "name",
+  url: guild.vanityURLCode ? `https://discord.gg/${guild.vanityURLCode}` : null
+});
+
+// Custom avatar size
+const highResAuthor = createEmbedAuthor(user, {
+  size: 4096,
+  extension: "png"
+});
+```
+
+---
+
+## createEmbedFooter
+
+Create embed footer data.
+
+```typescript
+function createEmbedFooter(
+  options: string | EmbedPlusFooterData
+): EmbedFooterData | undefined
+```
+
+<ParamField path="options" type="string | EmbedPlusFooterData" required>
+  Footer text (string) or footer data object with `text` and `iconURL`
+</ParamField>
+
+<ResponseField name="return" type="EmbedFooterData | undefined">
+  Footer data, or `undefined` if both text and iconURL are empty
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createEmbedFooter } from "@magicyan/discord";
+
+// Simple text footer
+const footer = createEmbedFooter("Requested by user");
+
+// Footer with icon
+const footer2 = createEmbedFooter({
+  text: "Bot Name",
+  iconURL: client.user.displayAvatarURL()
+});
+
+// Use in embed
+const embed = createEmbed({
+  title: "Info",
+  footer: createEmbedFooter({
+    text: interaction.user.username,
+    iconURL: interaction.user.displayAvatarURL()
+  })
+});
+```
+
+---
+
+## createEmbedAsset
+
+Create embed asset data for thumbnails and images.
+
+```typescript
+function createEmbedAsset(
+  source: EmbedPlusAssetData,
+  options?: EmbedAssetOptions
+): EmbedAssetData | undefined
+```
+
+<ParamField path="source" type="EmbedPlusAssetData" required>
+  Asset source:
+  - URL string
+  - `Attachment` or `AttachmentBuilder`
+  - `EmbedAssetData` object
+  - `null` or `undefined`
+</ParamField>
+
+<ParamField path="options" type="EmbedAssetOptions">
+  Additional asset options (proxy URL, dimensions, etc.)
+</ParamField>
+
+<ResponseField name="return" type="EmbedAssetData | undefined">
+  Asset data with URL, or `undefined` if source is null/undefined
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createEmbedAsset } from "@magicyan/discord";
+
+// From URL
+const asset = createEmbedAsset("https://example.com/image.png");
+
+// From attachment
+const attachment = new AttachmentBuilder("./image.png");
+const asset2 = createEmbedAsset(attachment);
+// Result: { url: "attachment://image.png" }
+
+// Use in embed
+const embed = createEmbed({
+  title: "Image",
+  image: createEmbedAsset(attachment),
+  thumbnail: createEmbedAsset("https://example.com/thumb.png")
+});
+```

@@ -1,0 +1,443 @@
+---
+title: Math Utilities
+description: Random number generation and numeric parsing with fallback values
+---
+
+## Overview
+
+The math module provides utilities for generating random numbers and safely parsing numeric strings with fallback values. These functions are essential for game mechanics, randomization, and handling user input.
+
+## Random Number Generation
+
+### randomNumber
+
+Generates a random integer within a specified range (inclusive).
+
+```typescript
+function randomNumber(min: number, max: number): number
+```
+
+<ParamField path="min" type="number" required>
+  The minimum value (inclusive).
+</ParamField>
+
+<ParamField path="max" type="number" required>
+  The maximum value (inclusive).
+</ParamField>
+
+**Returns:** `number` - A random integer between `min` and `max`, inclusive.
+
+#### Examples
+
+```typescript
+import { randomNumber } from "@magicyan/core";
+
+// Dice roll
+const dice = randomNumber(1, 6);
+console.log(dice); // Random number: 1, 2, 3, 4, 5, or 6
+
+// Percentage (0-100)
+const percentage = randomNumber(0, 100);
+console.log(percentage); // Random number: 0 to 100
+
+// Large range
+const bigNumber = randomNumber(1000, 9999);
+console.log(bigNumber); // Random 4-digit number
+```
+
+#### Discord Bot Examples
+
+```typescript
+import { randomNumber } from "@magicyan/core";
+
+// Simple dice command
+function rollDice(sides: number = 6): number {
+  return randomNumber(1, sides);
+}
+
+const d6 = rollDice();      // Roll a 6-sided die
+const d20 = rollDice(20);   // Roll a 20-sided die
+
+// Loot drop system
+function generateLoot(): string {
+  const chance = randomNumber(1, 100);
+  
+  if (chance <= 5) return "Legendary Item";
+  if (chance <= 20) return "Epic Item";
+  if (chance <= 50) return "Rare Item";
+  return "Common Item";
+}
+
+// Random color for embeds
+import { rgbToHex } from "@magicyan/core";
+
+function randomColor(): number {
+  const r = randomNumber(0, 255);
+  const g = randomNumber(0, 255);
+  const b = randomNumber(0, 255);
+  return (r << 16) | (g << 8) | b;
+}
+```
+
+<Note>
+  `randomNumber` uses `Math.random()` internally, which is suitable for most use cases but not cryptographically secure. For security-sensitive applications, use Node's `crypto` module instead.
+</Note>
+
+---
+
+### random
+
+A utility object providing both integer and floating-point random number generation.
+
+```typescript
+const random: {
+  int(min: number, max: number): number;
+  float(min: number, max: number): number;
+}
+```
+
+#### random.int
+
+Generates a random integer within a specified range (inclusive).
+
+<ParamField path="min" type="number" required>
+  The minimum value (inclusive).
+</ParamField>
+
+<ParamField path="max" type="number" required>
+  The maximum value (inclusive).
+</ParamField>
+
+**Returns:** `number` - A random integer between `min` and `max`, inclusive.
+
+#### random.float
+
+Generates a random floating-point number within a specified range.
+
+<ParamField path="min" type="number" required>
+  The minimum value (inclusive).
+</ParamField>
+
+<ParamField path="max" type="number" required>
+  The maximum value (exclusive).
+</ParamField>
+
+**Returns:** `number` - A random float between `min` (inclusive) and `max` (exclusive).
+
+#### Examples
+
+```typescript
+import { random } from "@magicyan/core";
+
+// Random integer
+const int = random.int(1, 10);
+console.log(int); // Random integer: 1 to 10 (inclusive)
+
+// Random float
+const float = random.float(0, 1);
+console.log(float); // Random float: 0.0 to 0.999...
+
+// Random percentage with decimals
+const precisePercentage = random.float(0, 100);
+console.log(precisePercentage); // e.g., 42.7834
+
+// Random multiplier
+const multiplier = random.float(1.0, 2.0);
+console.log(multiplier); // e.g., 1.5337
+```
+
+#### Game Mechanics
+
+```typescript
+import { random } from "@magicyan/core";
+
+// Critical hit system
+function calculateDamage(baseDamage: number): number {
+  const critChance = random.float(0, 100);
+  const isCrit = critChance <= 15; // 15% crit chance
+  
+  const critMultiplier = isCrit ? random.float(1.5, 2.0) : 1.0;
+  return Math.floor(baseDamage * critMultiplier);
+}
+
+// Experience gain with variance
+function gainExperience(baseXP: number): number {
+  const variance = random.float(0.9, 1.1); // ±10% variance
+  return Math.floor(baseXP * variance);
+}
+
+// Random spawn delay
+function getSpawnDelay(): number {
+  // Random delay between 5 and 15 seconds
+  return random.float(5, 15) * 1000;
+}
+```
+
+<Tip>
+  Use `random.int()` for discrete values (like dice rolls or item quantities) and `random.float()` for continuous values (like damage multipliers or spawn delays).
+</Tip>
+
+---
+
+## Safe Numeric Parsing
+
+### parseIntOrDefault
+
+Parses a string to an integer, returning a default value if parsing fails.
+
+```typescript
+function parseIntOrDefault(
+  value: string,
+  defaultValue: number,
+  radix?: number
+): number
+```
+
+<ParamField path="value" type="string" required>
+  The string to parse.
+</ParamField>
+
+<ParamField path="defaultValue" type="number" required>
+  The value to return if parsing fails (returns `NaN`).
+</ParamField>
+
+<ParamField path="radix" type="number" default="10">
+  The base/radix for parsing (e.g., 10 for decimal, 16 for hexadecimal).
+</ParamField>
+
+**Returns:** `number` - The parsed integer or the default value if parsing fails.
+
+#### Examples
+
+```typescript
+import { parseIntOrDefault } from "@magicyan/core";
+
+// Valid number
+const num1 = parseIntOrDefault("42", 0);
+console.log(num1); // 42
+
+// Invalid number - returns default
+const num2 = parseIntOrDefault("not a number", 0);
+console.log(num2); // 0
+
+// Hexadecimal
+const hex = parseIntOrDefault("FF", 0, 16);
+console.log(hex); // 255
+
+// Binary
+const binary = parseIntOrDefault("1010", 0, 2);
+console.log(binary); // 10
+```
+
+#### Discord Command Parsing
+
+```typescript
+import { parseIntOrDefault } from "@magicyan/core";
+import { CommandInteraction } from "discord.js";
+
+async function handleKickCommand(interaction: CommandInteraction) {
+  const daysInput = interaction.options.get("delete_days")?.value as string;
+  const days = parseIntOrDefault(daysInput, 0);
+  
+  // Clamp to valid range (0-7 for Discord)
+  const deleteDays = Math.max(0, Math.min(7, days));
+  
+  // Kick user with message deletion...
+}
+
+// Pagination with fallback
+function getPageNumber(input: string): number {
+  const page = parseIntOrDefault(input, 1);
+  return Math.max(1, page); // Ensure at least page 1
+}
+```
+
+<Note>
+  Unlike `parseInt()`, this function never returns `NaN`. It always returns a valid number, either the parsed value or your default.
+</Note>
+
+---
+
+### parseFloatOrDefault
+
+Parses a string to a floating-point number, returning a default value if parsing fails.
+
+```typescript
+function parseFloatOrDefault(
+  value: string,
+  defaultValue: number
+): number
+```
+
+<ParamField path="value" type="string" required>
+  The string to parse.
+</ParamField>
+
+<ParamField path="defaultValue" type="number" required>
+  The value to return if parsing fails (returns `NaN`).
+</ParamField>
+
+**Returns:** `number` - The parsed float or the default value if parsing fails.
+
+#### Examples
+
+```typescript
+import { parseFloatOrDefault } from "@magicyan/core";
+
+// Valid float
+const num1 = parseFloatOrDefault("3.14", 0);
+console.log(num1); // 3.14
+
+// Invalid number - returns default
+const num2 = parseFloatOrDefault("invalid", 0.0);
+console.log(num2); // 0.0
+
+// Scientific notation
+const scientific = parseFloatOrDefault("1.5e3", 0);
+console.log(scientific); // 1500
+
+// Negative numbers
+const negative = parseFloatOrDefault("-42.5", 0);
+console.log(negative); // -42.5
+```
+
+#### Configuration Parsing
+
+```typescript
+import { parseFloatOrDefault } from "@magicyan/core";
+
+interface ServerConfig {
+  xpMultiplier: number;
+  dropRateBonus: number;
+  cooldownReduction: number;
+}
+
+function loadConfig(raw: Record<string, string>): ServerConfig {
+  return {
+    xpMultiplier: parseFloatOrDefault(raw.xpMultiplier, 1.0),
+    dropRateBonus: parseFloatOrDefault(raw.dropRateBonus, 0.0),
+    cooldownReduction: parseFloatOrDefault(raw.cooldownReduction, 0.0)
+  };
+}
+
+// User input for multipliers
+function applyMultiplier(amount: number, multiplierInput: string): number {
+  const multiplier = parseFloatOrDefault(multiplierInput, 1.0);
+  return amount * Math.max(0, multiplier); // Prevent negative multipliers
+}
+```
+
+<Warning>
+  Always validate the parsed result is within acceptable bounds for your application. These functions prevent `NaN` but don't enforce min/max constraints.
+</Warning>
+
+---
+
+## Common Patterns
+
+<AccordionGroup>
+  <Accordion title="Weighted Random Selection">
+    ```typescript
+    import { random } from "@magicyan/core";
+
+    interface WeightedItem<T> {
+      item: T;
+      weight: number;
+    }
+
+    function weightedRandom<T>(items: WeightedItem<T>[]): T {
+      const totalWeight = items.reduce((sum, { weight }) => sum + weight, 0);
+      const roll = random.float(0, totalWeight);
+      
+      let cumulative = 0;
+      for (const { item, weight } of items) {
+        cumulative += weight;
+        if (roll < cumulative) return item;
+      }
+      
+      return items[items.length - 1].item;
+    }
+
+    // Usage
+    const loot = weightedRandom([
+      { item: "Common", weight: 50 },
+      { item: "Rare", weight: 30 },
+      { item: "Epic", weight: 15 },
+      { item: "Legendary", weight: 5 }
+    ]);
+    ```
+  </Accordion>
+  
+  <Accordion title="Safe Command Option Parsing">
+    ```typescript
+    import { parseIntOrDefault, parseFloatOrDefault } from "@magicyan/core";
+    import { CommandInteraction } from "discord.js";
+
+    function getIntOption(
+      interaction: CommandInteraction,
+      name: string,
+      defaultValue: number = 0
+    ): number {
+      const value = interaction.options.get(name)?.value;
+      if (typeof value === "number") return Math.floor(value);
+      if (typeof value === "string") return parseIntOrDefault(value, defaultValue);
+      return defaultValue;
+    }
+
+    function getFloatOption(
+      interaction: CommandInteraction,
+      name: string,
+      defaultValue: number = 0.0
+    ): number {
+      const value = interaction.options.get(name)?.value;
+      if (typeof value === "number") return value;
+      if (typeof value === "string") return parseFloatOrDefault(value, defaultValue);
+      return defaultValue;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Range-Constrained Random Values">
+    ```typescript
+    import { random } from "@magicyan/core";
+
+    function randomInRange(
+      min: number,
+      max: number,
+      isFloat: boolean = false
+    ): number {
+      if (min > max) [min, max] = [max, min];
+      return isFloat ? random.float(min, max) : random.int(min, max);
+    }
+
+    function randomDamage(baseDamage: number, variance: number): number {
+      const min = baseDamage - variance;
+      const max = baseDamage + variance;
+      return random.int(Math.max(0, min), max);
+    }
+
+    // Usage
+    const damage = randomDamage(100, 20); // 80-120 damage
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Validation" icon="shield-check">
+    Always validate parsed numbers are within acceptable ranges for your use case.
+  </Card>
+  
+  <Card title="Type Safety" icon="code">
+    Use TypeScript's type system to ensure correct usage of int vs float functions.
+  </Card>
+  
+  <Card title="Defaults" icon="circle-check">
+    Choose sensible defaults that won't break your application if parsing fails.
+  </Card>
+  
+  <Card title="Testing" icon="vial">
+    Test edge cases like empty strings, special characters, and extreme values.
+  </Card>
+</CardGroup>

@@ -1,0 +1,340 @@
+---
+title: 'Mojang API'
+description: 'Fetch player profiles and session data from Mojang'
+icon: 'user'
+---
+
+The Mojang API module provides functions to fetch player profile information and session data directly from Mojang's official APIs.
+
+## Functions
+
+### fetchMinecraftProfile
+
+Fetch a player's basic profile information by username.
+
+```typescript
+async function fetchMinecraftProfile(
+  nick: string
+): Promise<FetchMinecraftProfileResult>
+```
+
+#### Parameters
+
+- `nick` - Player username (case-sensitive)
+
+#### Returns
+
+```typescript
+interface MinecraftProfile {
+  /** UUID of the player */
+  id: string;
+  /** Name of the player, case sensitive */
+  name: string;
+  /** Included if account has not migrated to Mojang account */
+  legacy?: boolean;
+  /** Included if account does not own the game */
+  demo?: boolean;
+}
+
+type FetchMinecraftProfileResult = FetchResult<MinecraftProfile>;
+```
+
+#### Example
+
+```typescript
+import { fetchMinecraftProfile } from '@magicyan/minecraft';
+
+const result = await fetchMinecraftProfile('Notch');
+
+if (result.success) {
+  const profile = result.data;
+  console.log('Player UUID:', profile.id);
+  console.log('Player Name:', profile.name);
+  
+  if (profile.legacy) {
+    console.log('This is a legacy account');
+  }
+  
+  if (profile.demo) {
+    console.log('This is a demo account');
+  }
+} else {
+  console.error(`Profile not found: ${result.error}`);
+}
+```
+
+### fetchMinecraftProfileSession
+
+Fetch detailed session information including textures (skin and cape) for a player by UUID.
+
+```typescript
+async function fetchMinecraftProfileSession(
+  UUID: string
+): Promise<FetchMinecraftProfileSessionResult>
+```
+
+#### Parameters
+
+- `UUID` - Player UUID (with or without hyphens)
+
+#### Returns
+
+```typescript
+interface MinecraftProfileSession {
+  /** UUID of the player */
+  id: string;
+  /** Name of the player */
+  name: string;
+  /** Included if account has not migrated */
+  legacy?: boolean;
+  /** Session properties containing texture information */
+  properties: SessionProperty[];
+}
+
+interface SessionProperty {
+  timestamp: number;
+  profileId: string;
+  profileName: string;
+  textures: {
+    SKIN: {
+      url: string;
+      metadata?: {
+        model: "slim";
+      };
+    };
+    CAPE?: {
+      url: string;
+    };
+  };
+}
+
+type FetchMinecraftProfileSessionResult = FetchResult<MinecraftProfileSession>;
+```
+
+#### Example
+
+```typescript
+import { fetchMinecraftProfileSession } from '@magicyan/minecraft';
+
+const result = await fetchMinecraftProfileSession(
+  '069a79f4-44e9-4726-a5be-fca90e38aaf5' // Notch's UUID
+);
+
+if (result.success) {
+  const session = result.data;
+  console.log('Player:', session.name);
+  
+  // Access texture data
+  const property = session.properties[0];
+  if (property) {
+    const { textures } = property;
+    
+    console.log('Skin URL:', textures.SKIN.url);
+    
+    // Check if it's a slim model
+    if (textures.SKIN.metadata?.model === 'slim') {
+      console.log('This player uses a slim skin model');
+    }
+    
+    // Check for cape
+    if (textures.CAPE) {
+      console.log('Cape URL:', textures.CAPE.url);
+    }
+  }
+}
+```
+
+## Combined Workflow
+
+Fetch both profile and session data:
+
+```typescript
+import {
+  fetchMinecraftProfile,
+  fetchMinecraftProfileSession,
+} from '@magicyan/minecraft';
+
+async function getPlayerData(username: string) {
+  // First, get the UUID from the username
+  const profileResult = await fetchMinecraftProfile(username);
+  
+  if (!profileResult.success) {
+    console.error('Player not found');
+    return null;
+  }
+  
+  const { id: uuid, name } = profileResult.data;
+  
+  // Then fetch detailed session data
+  const sessionResult = await fetchMinecraftProfileSession(uuid);
+  
+  if (!sessionResult.success) {
+    console.error('Failed to fetch session data');
+    return null;
+  }
+  
+  const textures = sessionResult.data.properties[0]?.textures;
+  
+  return {
+    uuid,
+    name,
+    skinUrl: textures?.SKIN.url,
+    skinModel: textures?.SKIN.metadata?.model || 'wide',
+    capeUrl: textures?.CAPE?.url,
+  };
+}
+
+// Usage
+const player = await getPlayerData('Notch');
+if (player) {
+  console.log('Player data:', player);
+}
+```
+
+## Discord Bot Example
+
+Create a command to display player information:
+
+```typescript
+import {
+  fetchMinecraftProfile,
+  fetchMinecraftProfileSession,
+} from '@magicyan/minecraft';
+import { EmbedBuilder } from 'discord.js';
+
+async function createPlayerEmbed(username: string) {
+  const profileResult = await fetchMinecraftProfile(username);
+  
+  if (!profileResult.success) {
+    return new EmbedBuilder()
+      .setColor('Red')
+      .setDescription(`Player "${username}" not found`);
+  }
+  
+  const { id: uuid, name } = profileResult.data;
+  const sessionResult = await fetchMinecraftProfileSession(uuid);
+  
+  const embed = new EmbedBuilder()
+    .setTitle(`Minecraft Player: ${name}`)
+    .setColor('Green')
+    .addFields(
+      { name: 'UUID', value: uuid },
+      { name: 'Username', value: name }
+    );
+  
+  if (sessionResult.success) {
+    const textures = sessionResult.data.properties[0]?.textures;
+    
+    if (textures?.SKIN) {
+      embed.addFields({
+        name: 'Skin Model',
+        value: textures.SKIN.metadata?.model || 'wide',
+      });
+      embed.setThumbnail(
+        `https://crafatar.com/avatars/${uuid}?overlay`
+      );
+    }
+    
+    if (textures?.CAPE) {
+      embed.addFields({
+        name: 'Cape',
+        value: 'Yes',
+      });
+    }
+  }
+  
+  return embed;
+}
+
+// In your command handler
+const embed = await createPlayerEmbed('Notch');
+await interaction.reply({ embeds: [embed] });
+```
+
+## UUID Formats
+
+The `fetchMinecraftProfileSession` function accepts UUIDs with or without hyphens:
+
+```typescript
+// Both formats work
+await fetchMinecraftProfileSession('069a79f444e94726a5befca90e38aaf5');
+await fetchMinecraftProfileSession('069a79f4-44e9-4726-a5be-fca90e38aaf5');
+```
+
+## Error Handling
+
+```typescript
+const result = await fetchMinecraftProfile('InvalidPlayer123456789');
+
+if (!result.success) {
+  switch (result.code) {
+    case 404:
+      console.error('Player not found');
+      break;
+    case 429:
+      console.error('Rate limited - too many requests');
+      break;
+    default:
+      console.error(`API error: ${result.error}`);
+  }
+}
+```
+
+## Rate Limiting
+
+Mojang's API has rate limits. Be mindful when making multiple requests:
+
+- Cache results when possible
+- Implement exponential backoff on errors
+- Don't spam the API with requests
+
+```typescript
+// Simple caching example
+const profileCache = new Map<string, MinecraftProfile>();
+
+async function getCachedProfile(username: string) {
+  const cached = profileCache.get(username.toLowerCase());
+  if (cached) return { success: true, data: cached };
+  
+  const result = await fetchMinecraftProfile(username);
+  if (result.success) {
+    profileCache.set(username.toLowerCase(), result.data);
+  }
+  
+  return result;
+}
+```
+
+## API Endpoints
+
+The module uses these official Mojang endpoints:
+
+```typescript
+RouteBases.mcservices = 'https://api.minecraftservices.com';
+RouteBases.sessionmojang = 'https://sessionserver.mojang.com';
+```
+
+### Profile Lookup
+
+```
+GET https://api.minecraftservices.com/minecraft/profile/lookup/name/{username}
+```
+
+### Session Profile
+
+```
+GET https://sessionserver.mojang.com/session/minecraft/profile/{uuid}
+```
+
+## Type Definitions
+
+Complete TypeScript type definitions are included:
+
+```typescript
+import type {
+  MinecraftProfile,
+  MinecraftProfileSession,
+  FetchMinecraftProfileResult,
+  FetchMinecraftProfileSessionResult,
+} from '@magicyan/minecraft';
+```

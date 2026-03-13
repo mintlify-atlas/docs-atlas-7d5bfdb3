@@ -1,0 +1,289 @@
+---
+title: Mojang API
+description: API reference for Minecraft Mojang profile and session services
+---
+
+The Mojang API provides functions to fetch Minecraft player profiles and session data from official Mojang services.
+
+## Functions
+
+### fetchMinecraftProfile
+
+Fetches a Minecraft player profile by nickname.
+
+```typescript
+async function fetchMinecraftProfile(
+    nick: string
+): Promise<FetchMinecraftProfileResult>
+```
+
+<ParamField path="nick" type="string" required>
+  Player nickname (username)
+</ParamField>
+
+<ResponseField name="success" type="boolean" required>
+  Whether the fetch was successful
+</ResponseField>
+
+<ResponseField name="data" type="MinecraftProfile">
+  Available when `success` is `true`:
+  
+  <ResponseField name="id" type="string">
+    UUID of the player (without dashes)
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Player name (case-sensitive)
+  </ResponseField>
+  
+  <ResponseField name="legacy" type="boolean">
+    Present if account has not migrated to Mojang account
+  </ResponseField>
+  
+  <ResponseField name="demo" type="boolean">
+    Present if account does not own the game
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message when `success` is `false`
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code when `success` is `false`
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchMinecraftProfile } from "@magicyan/minecraft";
+
+const result = await fetchMinecraftProfile("Notch");
+
+if (result.success) {
+  console.log(`Name: ${result.data.name}`);
+  console.log(`UUID: ${result.data.id}`);
+  
+  if (result.data.legacy) {
+    console.log("This is a legacy account");
+  }
+  
+  if (result.data.demo) {
+    console.log("This is a demo account");
+  }
+} else {
+  console.error(`Error ${result.code}: ${result.error}`);
+}
+```
+
+---
+
+### fetchMinecraftProfileSession
+
+Fetches detailed session data for a Minecraft player, including skin and cape information.
+
+```typescript
+async function fetchMinecraftProfileSession(
+    UUID: string
+): Promise<FetchMinecraftProfileSessionResult>
+```
+
+<ParamField path="UUID" type="string" required>
+  Player UUID (with or without dashes)
+</ParamField>
+
+<ResponseField name="success" type="boolean" required>
+  Whether the fetch was successful
+</ResponseField>
+
+<ResponseField name="data" type="MinecraftProfileSession">
+  Available when `success` is `true`:
+  
+  <ResponseField name="id" type="string">
+    UUID of the player
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Player name
+  </ResponseField>
+  
+  <ResponseField name="legacy" type="boolean">
+    Present if account has not migrated to Mojang account
+  </ResponseField>
+  
+  <ResponseField name="properties" type="SessionProperty[]">
+    Array of decoded session properties
+    
+    <ResponseField name="timestamp" type="number">
+      Unix timestamp in milliseconds
+    </ResponseField>
+    
+    <ResponseField name="profileId" type="string">
+      Profile UUID
+    </ResponseField>
+    
+    <ResponseField name="profileName" type="string">
+      Profile name
+    </ResponseField>
+    
+    <ResponseField name="textures" type="object">
+      Player textures
+      
+      <ResponseField name="SKIN" type="object">
+        Skin information
+        
+        <ResponseField name="url" type="string">
+          Direct URL to skin texture
+        </ResponseField>
+        
+        <ResponseField name="metadata" type="object">
+          Optional metadata
+          
+          <ResponseField name="model" type="'slim'">
+            Present only for slim/Alex model
+          </ResponseField>
+        </ResponseField>
+      </ResponseField>
+      
+      <ResponseField name="CAPE" type="object">
+        Cape information (if player has a cape)
+        
+        <ResponseField name="url" type="string">
+          Direct URL to cape texture
+        </ResponseField>
+      </ResponseField>
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message when `success` is `false`
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code when `success` is `false`
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchMinecraftProfile, fetchMinecraftProfileSession } from "@magicyan/minecraft";
+
+// First get the UUID from nickname
+const profileResult = await fetchMinecraftProfile("Notch");
+
+if (profileResult.success) {
+  // Then fetch session data with UUID
+  const sessionResult = await fetchMinecraftProfileSession(profileResult.data.id);
+  
+  if (sessionResult.success) {
+    const { properties } = sessionResult.data;
+    
+    if (properties.length > 0) {
+      const { textures } = properties[0];
+      
+      // Check skin
+      if (textures.SKIN) {
+        console.log(`Skin URL: ${textures.SKIN.url}`);
+        
+        const skinModel = textures.SKIN.metadata?.model === "slim" 
+          ? "Slim (Alex)" 
+          : "Classic (Steve)";
+        console.log(`Model: ${skinModel}`);
+      }
+      
+      // Check cape
+      if (textures.CAPE) {
+        console.log(`Cape URL: ${textures.CAPE.url}`);
+      } else {
+        console.log("No cape");
+      }
+    }
+  } else {
+    console.error(`Session error: ${sessionResult.error}`);
+  }
+} else {
+  console.error(`Profile error: ${profileResult.error}`);
+}
+```
+
+---
+
+## Type Definitions
+
+### MinecraftProfile
+
+Basic Minecraft player profile information.
+
+```typescript
+interface MinecraftProfile {
+  id: string;         // UUID of the player
+  name: string;       // Name of the player (case-sensitive)
+  legacy?: boolean;   // Account has not migrated to Mojang
+  demo?: boolean;     // Account does not own the game
+}
+```
+
+### MinecraftProfileSession
+
+Detailed session information including textures.
+
+```typescript
+interface MinecraftProfileSession {
+  id: string;
+  name: string;
+  legacy?: boolean;
+  properties: SessionProperty[];
+}
+```
+
+### SessionProperty
+
+Decoded session property containing texture information.
+
+```typescript
+interface SessionProperty {
+  timestamp: number;
+  profileId: string;
+  profileName: string;
+  textures: {
+    SKIN: {
+      url: string;
+      metadata?: {
+        model: "slim";
+      };
+    };
+    CAPE?: {
+      url: string;
+    };
+  };
+}
+```
+
+---
+
+## Usage Notes
+
+### API Endpoints
+
+This module uses official Mojang API endpoints:
+- Profile lookup: `https://api.minecraftservices.com/minecraft/profile/lookup/name/{nick}`
+- Session server: `https://sessionserver.mojang.com/session/minecraft/profile/{UUID}`
+
+### Rate Limiting
+
+Mojang APIs have rate limits. For production applications:
+- Cache profile data when possible
+- Implement exponential backoff for retries
+- Monitor response codes (429 indicates rate limiting)
+
+### UUID Format
+
+The `fetchMinecraftProfile` function returns UUIDs without dashes. When using `fetchMinecraftProfileSession`, both formats (with or without dashes) are accepted.
+
+**Example:**
+```typescript
+// Both work
+await fetchMinecraftProfileSession("069a79f444e94726a5befca90e38aaf5");
+await fetchMinecraftProfileSession("069a79f4-44e9-4726-a5be-fca90e38aaf5");
+```

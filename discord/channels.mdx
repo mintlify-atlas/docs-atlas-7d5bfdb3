@@ -1,0 +1,372 @@
+---
+title: 'Channels'
+description: 'Search and filter guild channels'
+icon: 'hashtag'
+---
+
+## Overview
+
+The channels module provides type-safe utilities for finding guild channels by type, name, ID, category, and custom filters.
+
+## findChannel
+
+Search for channels in a guild with full type inference.
+
+### Signature
+
+```typescript
+function findChannel<Type extends GuildChannelType = ChannelType.GuildText>(
+  guild: Guild,
+  type?: Type
+): {
+  byId(id: string): GetChannelType<Type> | undefined;
+  byName(name: string, and?: (channel: GetChannelType<Type>) => boolean): GetChannelType<Type> | undefined;
+  byFilter(filter: (channel: GetChannelType<Type>) => boolean): GetChannelType<Type> | undefined;
+  inCategoryId(id: string): { ... };
+  inCategoryName(name: string): { ... };
+}
+```
+
+### Basic Usage
+
+<Tabs>
+  <Tab title="Find by Name">
+    ```typescript
+    import { findChannel } from '@magicyan/discord';
+    import { ChannelType, Guild } from 'discord.js';
+
+    const guild: Guild = ...;
+
+    // Find a text channel
+    const general = findChannel(guild, ChannelType.GuildText)
+      .byName('general');
+
+    if (general) {
+      await general.send('Hello!');
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by ID">
+    ```typescript
+    import { findChannel } from '@magicyan/discord';
+    import { ChannelType } from 'discord.js';
+
+    // Find a voice channel by ID
+    const voiceChannel = findChannel(guild, ChannelType.GuildVoice)
+      .byId('1234567890');
+
+    if (voiceChannel) {
+      console.log(`Found: ${voiceChannel.name}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find with Filter">
+    ```typescript
+    import { findChannel } from '@magicyan/discord';
+    import { ChannelType } from 'discord.js';
+
+    // Find a text channel with specific permissions
+    const channel = findChannel(guild, ChannelType.GuildText)
+      .byFilter(ch => ch.nsfw === false);
+
+    // Find with name and additional condition
+    const announcements = findChannel(guild, ChannelType.GuildText)
+      .byName('announcements', ch => ch.topic?.includes('official') ?? false);
+    ```
+  </Tab>
+</Tabs>
+
+## Channel Types
+
+The function supports all Discord channel types with full type inference:
+
+<CodeGroup>
+
+```typescript Text Channels
+import { findChannel } from '@magicyan/discord';
+import { ChannelType } from 'discord.js';
+
+// Type is inferred as TextChannel | undefined
+const textChannel = findChannel(guild, ChannelType.GuildText)
+  .byName('chat');
+```
+
+```typescript Voice Channels
+import { findChannel } from '@magicyan/discord';
+import { ChannelType } from 'discord.js';
+
+// Type is inferred as VoiceChannel | undefined
+const voiceChannel = findChannel(guild, ChannelType.GuildVoice)
+  .byName('General Voice');
+```
+
+```typescript Forum Channels
+import { findChannel } from '@magicyan/discord';
+import { ChannelType } from 'discord.js';
+
+// Type is inferred as ForumChannel | undefined
+const forum = findChannel(guild, ChannelType.GuildForum)
+  .byName('help-forum');
+```
+
+```typescript Announcement Channels
+import { findChannel } from '@magicyan/discord';
+import { ChannelType } from 'discord.js';
+
+// Type is inferred as NewsChannel | undefined
+const news = findChannel(guild, ChannelType.GuildAnnouncement)
+  .byName('announcements');
+```
+
+</CodeGroup>
+
+## Search by Category
+
+Find channels within specific categories:
+
+<Tabs>
+  <Tab title="By Category ID">
+    ```typescript
+    import { findChannel } from '@magicyan/discord';
+    import { ChannelType } from 'discord.js';
+
+    const categoryId = '1234567890';
+
+    // Find by ID within category
+    const channel = findChannel(guild, ChannelType.GuildText)
+      .inCategoryId(categoryId)
+      .byId('9876543210');
+
+    // Find by name within category
+    const chat = findChannel(guild, ChannelType.GuildText)
+      .inCategoryId(categoryId)
+      .byName('general');
+
+    // Find with filter within category
+    const nsfw = findChannel(guild, ChannelType.GuildText)
+      .inCategoryId(categoryId)
+      .byFilter(ch => ch.nsfw);
+    ```
+  </Tab>
+  
+  <Tab title="By Category Name">
+    ```typescript
+    import { findChannel } from '@magicyan/discord';
+    import { ChannelType } from 'discord.js';
+
+    // Find by name in "Community" category
+    const welcome = findChannel(guild, ChannelType.GuildText)
+      .inCategoryName('Community')
+      .byName('welcome');
+
+    // Find voice channel in "Gaming" category
+    const voice = findChannel(guild, ChannelType.GuildVoice)
+      .inCategoryName('Gaming')
+      .byName('Game Room 1');
+
+    // Find with filter in category
+    const modChannel = findChannel(guild, ChannelType.GuildText)
+      .inCategoryName('Moderation')
+      .byFilter(ch => ch.permissionOverwrites.cache.size > 0);
+    ```
+  </Tab>
+</Tabs>
+
+## getChannelUrlInfo
+
+Extract channel and guild IDs from Discord URLs.
+
+### Signature
+
+```typescript
+function getChannelUrlInfo(url: string): {
+  channelId?: string;
+  guildId?: string;
+}
+```
+
+### Usage
+
+```typescript
+import { getChannelUrlInfo } from '@magicyan/discord';
+
+const url = 'https://discord.com/channels/1234567890/9876543210';
+const { channelId, guildId } = getChannelUrlInfo(url);
+
+if (channelId && guildId) {
+  const guild = client.guilds.cache.get(guildId);
+  const channel = guild?.channels.cache.get(channelId);
+  
+  if (channel) {
+    console.log(`Found channel: ${channel.name}`);
+  }
+}
+```
+
+## Real-World Examples
+
+### Create Channel Selector
+
+```typescript
+import { findChannel, createRow } from '@magicyan/discord';
+import { 
+  ChannelType,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder 
+} from 'discord.js';
+
+function createChannelSelector(guild: Guild, categoryName: string) {
+  const channels = guild.channels.cache
+    .filter(ch => 
+      ch.type === ChannelType.GuildText &&
+      ch.parent?.name === categoryName
+    )
+    .first(25); // Discord limit
+
+  const options = channels.map(channel =>
+    new StringSelectMenuOptionBuilder()
+      .setLabel(channel.name)
+      .setValue(channel.id)
+      .setDescription(channel.topic || 'No description')
+      .setEmoji('💬')
+  );
+
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('channel_selector')
+    .setPlaceholder('Select a channel')
+    .addOptions(options);
+
+  return createRow(menu);
+}
+```
+
+### Multi-Channel Broadcast
+
+```typescript
+import { findChannel, createEmbed } from '@magicyan/discord';
+import { ChannelType, Guild } from 'discord.js';
+
+async function broadcastToCategory(
+  guild: Guild,
+  categoryName: string,
+  message: string
+) {
+  const embed = createEmbed({
+    title: '📢 Announcement',
+    description: message,
+    color: '#5865F2',
+    timestamp: true
+  });
+
+  // Get all text channels in the category
+  const channels = guild.channels.cache.filter(ch => 
+    ch.type === ChannelType.GuildText &&
+    ch.parent?.name === categoryName
+  );
+
+  const results = await Promise.allSettled(
+    channels.map(channel => 
+      channel.isTextBased() ? channel.send({ embeds: [embed] }) : null
+    )
+  );
+
+  const successful = results.filter(r => r.status === 'fulfilled').length;
+  console.log(`Broadcasted to ${successful}/${channels.size} channels`);
+}
+```
+
+### Channel Audit
+
+```typescript
+import { findChannel } from '@magicyan/discord';
+import { ChannelType, Guild } from 'discord.js';
+
+function auditChannels(guild: Guild) {
+  const report = {
+    emptyChannels: [],
+    inactiveChannels: [],
+    nsfwChannels: []
+  };
+
+  guild.channels.cache.forEach(channel => {
+    if (channel.type !== ChannelType.GuildText) return;
+
+    // Check for empty channels
+    if (!channel.topic && channel.messages.cache.size === 0) {
+      report.emptyChannels.push(channel.name);
+    }
+
+    // Check for NSFW channels
+    if (channel.nsfw) {
+      report.nsfwChannels.push(channel.name);
+    }
+  });
+
+  return report;
+}
+```
+
+### Permission Checker
+
+```typescript
+import { findChannel } from '@magicyan/discord';
+import { ChannelType, PermissionsBitField } from 'discord.js';
+
+function findAccessibleChannels(guild: Guild, userId: string) {
+  const member = guild.members.cache.get(userId);
+  if (!member) return [];
+
+  return guild.channels.cache
+    .filter(channel => {
+      if (channel.type !== ChannelType.GuildText) return false;
+      
+      const permissions = channel.permissionsFor(member);
+      return permissions?.has(PermissionsBitField.Flags.ViewChannel) ?? false;
+    })
+    .map(ch => ch.name);
+}
+```
+
+## Best Practices
+
+<Note>
+  Always specify the channel type for better type inference and to avoid searching through irrelevant channels.
+</Note>
+
+<Warning>
+  The `findChannel` function searches the cache. For large guilds, consider using filters early to optimize performance.
+</Warning>
+
+<Tip>
+  When searching by category, use category IDs for better performance compared to names.
+</Tip>
+
+## API Reference
+
+### findChannel(guild, type?)
+
+<ParamField path="guild" type="Guild" required>
+  The guild to search channels in
+</ParamField>
+
+<ParamField path="type" type="ChannelType" default="ChannelType.GuildText">
+  The type of channel to search for
+</ParamField>
+
+**Returns:** An object with search methods
+
+- `byId(id)` - Find by channel ID
+- `byName(name, and?)` - Find by name with optional filter
+- `byFilter(filter)` - Find by custom filter function
+- `inCategoryId(id)` - Scope search to a category by ID
+- `inCategoryName(name)` - Scope search to a category by name
+
+### getChannelUrlInfo(url)
+
+<ParamField path="url" type="string" required>
+  A Discord channel URL
+</ParamField>
+
+**Returns:** An object with optional `channelId` and `guildId` properties

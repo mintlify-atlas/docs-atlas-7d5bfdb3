@@ -1,0 +1,166 @@
+---
+title: 'Discord Package Overview'
+description: 'Comprehensive utilities for Discord.js bot development'
+icon: 'robot'
+---
+
+## Introduction
+
+The Magicyan Discord package provides a powerful set of utilities to simplify Discord.js bot development. It offers type-safe helpers for working with commands, channels, members, roles, emojis, webhooks, embeds, and UI components.
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @magicyan/discord
+```
+
+```bash pnpm
+pnpm add @magicyan/discord
+```
+
+```bash yarn
+yarn add @magicyan/discord
+```
+
+</CodeGroup>
+
+## Core Features
+
+The package is organized into several functional modules:
+
+<CardGroup cols={2}>
+  <Card title="Commands" icon="terminal" href="/discord/commands">
+    Find and mention slash commands with type-safe helpers
+  </Card>
+  <Card title="Channels" icon="hashtag" href="/discord/channels">
+    Search and filter guild channels by type, name, category, and more
+  </Card>
+  <Card title="Members" icon="users" href="/discord/members">
+    Find guild members by username, nickname, display name, or ID
+  </Card>
+  <Card title="Roles" icon="shield" href="/discord/roles">
+    Search roles by name, color, hex color, or custom filters
+  </Card>
+  <Card title="Emojis" icon="smile" href="/discord/emojis">
+    Find guild and global emojis with animation support
+  </Card>
+  <Card title="Webhooks" icon="link" href="/discord/webhooks">
+    Create webhook clients safely with error handling
+  </Card>
+  <Card title="Embeds" icon="message" href="/discord/embeds">
+    Build rich embeds with enhanced features and type safety
+  </Card>
+  <Card title="Components" icon="grid" href="/discord/components">
+    Create buttons, modals, rows, sections, and more
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+Here's a simple example showing multiple utilities working together:
+
+```typescript
+import { 
+  findCommand, 
+  commandMention,
+  findChannel,
+  createEmbed,
+  createRow,
+  ButtonBuilder,
+  ButtonStyle
+} from '@magicyan/discord';
+import { Client, ChannelType } from 'discord.js';
+
+const client = new Client({ intents: [...] });
+
+client.on('ready', async () => {
+  // Find a command
+  const pingCommand = findCommand(client).byName('ping');
+  
+  // Find a text channel
+  const announcements = findChannel(guild, ChannelType.GuildText)
+    .byName('announcements');
+  
+  if (announcements && pingCommand) {
+    // Create an embed
+    const embed = createEmbed({
+      title: '🎉 Bot is Online!',
+      description: `Try the ${commandMention(pingCommand)} command!`,
+      color: '#5865F2',
+      timestamp: true
+    });
+    
+    // Create a button row
+    const row = createRow(
+      new ButtonBuilder({
+        customId: 'get_started',
+        label: 'Get Started',
+        style: ButtonStyle.Primary
+      })
+    );
+    
+    await announcements.send({ embeds: [embed], components: [row] });
+  }
+});
+```
+
+## Type Safety
+
+All utilities are fully typed and work seamlessly with Discord.js types:
+
+```typescript
+import { findChannel } from '@magicyan/discord';
+import { Guild, ChannelType } from 'discord.js';
+
+const guild: Guild = ...;
+
+// Type is inferred as GuildTextBasedChannel | undefined
+const channel = findChannel(guild, ChannelType.GuildText)
+  .byName('general');
+
+// TypeScript knows the exact channel type
+if (channel) {
+  await channel.send('Hello!'); // ✅ Type-safe
+}
+```
+
+## Design Philosophy
+
+The package follows these principles:
+
+<AccordionGroup>
+  <Accordion title="Chainable API" icon="link">
+    Most utilities provide a fluent, chainable interface for intuitive usage.
+  </Accordion>
+  
+  <Accordion title="Type Safety" icon="shield-check">
+    Full TypeScript support with precise type inference and generics.
+  </Accordion>
+  
+  <Accordion title="Error Handling" icon="triangle-exclamation">
+    Safe defaults and graceful handling of edge cases.
+  </Accordion>
+  
+  <Accordion title="Performance" icon="gauge-high">
+    Efficient cache operations and minimal overhead.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Commands" icon="terminal" href="/discord/commands">
+    Learn how to find and mention commands
+  </Card>
+  <Card title="Embeds" icon="message" href="/discord/embeds">
+    Create beautiful embeds with EmbedPlusBuilder
+  </Card>
+  <Card title="Components" icon="grid" href="/discord/components">
+    Build interactive UI components
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/rinckodev/magicyan">
+    View the source code
+  </Card>
+</CardGroup>

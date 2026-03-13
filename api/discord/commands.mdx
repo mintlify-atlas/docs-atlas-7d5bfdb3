@@ -1,0 +1,153 @@
+---
+title: Commands
+description: API reference for command-related functions in @magicyan/discord
+---
+
+## findCommand
+
+Find application commands with flexible filtering options.
+
+```typescript
+function findCommand(guildOrClient: Guild | Client<true>): CommandFinder
+```
+
+<ParamField path="guildOrClient" type="Guild | Client<true>" required>
+  A Discord guild to search guild commands, or a client to search global commands
+</ParamField>
+
+<ResponseField name="return" type="CommandFinder">
+  An object with methods to find commands by various criteria
+</ResponseField>
+
+### Finder Methods
+
+#### byName
+
+Find a command by its name with an optional additional filter.
+
+```typescript
+byName(
+  name: string,
+  and?: (command: ApplicationCommand) => boolean
+): ApplicationCommand | undefined
+```
+
+<ParamField path="name" type="string" required>
+  The command name to search for
+</ParamField>
+
+<ParamField path="and" type="(command) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byId
+
+Find a command by its ID.
+
+```typescript
+byId(id: string): ApplicationCommand | undefined
+```
+
+<ParamField path="id" type="string" required>
+  The command ID to search for
+</ParamField>
+
+#### byFilter
+
+Find a command using a custom filter function.
+
+```typescript
+byFilter(
+  filter: (command: ApplicationCommand) => boolean
+): ApplicationCommand | undefined
+```
+
+<ParamField path="filter" type="(command) => boolean" required>
+  Custom filter function to match commands
+</ParamField>
+
+### Examples
+
+```typescript
+import { findCommand } from "@magicyan/discord";
+
+// Find a guild command by name
+const pingCommand = findCommand(guild).byName("ping");
+
+// Find a global command
+const helpCommand = findCommand(client).byName("help");
+
+// Find by ID
+const command = findCommand(guild).byId("123456789");
+
+// Find with custom filter
+const adminCommand = findCommand(guild).byFilter(
+  (cmd) => cmd.defaultMemberPermissions?.has("Administrator")
+);
+```
+
+---
+
+## commandMention
+
+Generate a formatted command mention string for use in Discord messages.
+
+```typescript
+function commandMention(
+  command: CommandMentionData,
+  group?: string,
+  subcommand?: string
+): string
+
+function commandMention(
+  command: CommandMentionData,
+  subcommand?: string
+): string
+```
+
+<ParamField path="command" type="CommandMentionData" required>
+  An object with `id` and `name` properties:
+  - `id`: The command ID
+  - `name`: The command name
+</ParamField>
+
+<ParamField path="group" type="string">
+  The command group name (for subcommand groups)
+</ParamField>
+
+<ParamField path="subcommand" type="string">
+  The subcommand name
+</ParamField>
+
+<ResponseField name="return" type="string">
+  A formatted mention string that will render as a clickable command in Discord
+</ResponseField>
+
+### Examples
+
+```typescript
+import { commandMention, findCommand } from "@magicyan/discord";
+
+const command = findCommand(guild).byName("ping");
+if (command) {
+  // Simple command mention
+  const mention = commandMention(command);
+  // Result: </ping:123456789>
+  
+  await interaction.reply(`Use ${mention} to check bot latency`);
+}
+
+// With subcommand
+const userCommand = findCommand(guild).byName("user");
+if (userCommand) {
+  const mention = commandMention(userCommand, "info");
+  // Result: </user info:123456789>
+}
+
+// With subcommand group
+const configCommand = findCommand(guild).byName("config");
+if (configCommand) {
+  const mention = commandMention(configCommand, "settings", "view");
+  // Result: </config settings view:123456789>
+}
+```

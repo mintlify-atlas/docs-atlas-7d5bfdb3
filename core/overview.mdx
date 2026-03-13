@@ -1,0 +1,124 @@
+---
+title: Overview
+description: A comprehensive TypeScript utility library for Discord.js bot development
+---
+
+## Introduction
+
+The Magicyan Core package is a collection of essential TypeScript utilities designed to streamline Discord.js bot development. It provides a wide range of helper functions for common programming tasks including string manipulation, data conversion, validation, mathematical operations, and date handling.
+
+## Installation
+
+```bash
+npm install @magicyan/core
+```
+
+```bash
+pnpm add @magicyan/core
+```
+
+```bash
+yarn add @magicyan/core
+```
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="String Formatting" icon="text" href="/core/formatting">
+    Build, format, and manipulate strings with utilities like `brBuilder`, `spaceBuilder`, `capitalize`, and `limitText`
+  </Card>
+  
+  <Card title="Color Conversion" icon="palette" href="/core/conversion">
+    Convert between hexadecimal and RGB color formats with `hexToRgb` and `rgbToHex`
+  </Card>
+  
+  <Card title="Data Validation" icon="shield-check" href="/core/validation">
+    Validate emails, URLs, numeric strings, and check for defined values
+  </Card>
+  
+  <Card title="Math Utilities" icon="calculator" href="/core/math">
+    Generate random numbers and parse numeric values with fallback defaults
+  </Card>
+  
+  <Card title="Timer Management" icon="clock" href="/core/timers">
+    Create intervals, timeouts, and loop intervals with clean stop functionality
+  </Card>
+  
+  <Card title="Date Manipulation" icon="calendar" href="/core/date">
+    Advanced date operations with method chaining support via `DatePlus`
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+```typescript
+import { 
+  capitalize,
+  hexToRgb,
+  isEmail,
+  randomNumber,
+  createDate,
+  toMs
+} from "@magicyan/core";
+
+// String formatting
+const title = capitalize("hello world", true);
+// "Hello World"
+
+// Color conversion
+const color = hexToRgb("#FF5733");
+// 16724755
+
+// Validation
+const valid = isEmail("user@example.com");
+// true
+
+// Random numbers
+const dice = randomNumber(1, 6);
+// Random number between 1 and 6
+
+// Date manipulation
+const futureDate = createDate()
+  .add("days", 7)
+  .add("hours", 2);
+
+// Time conversion
+const fiveMinutes = toMs(5, "minutes");
+// 300000
+```
+
+## Type Exports
+
+The package also exports useful TypeScript types:
+
+<ParamField path="CanBeString" type="string | { toString(): string }">
+  Represents values that can be converted to strings
+</ParamField>
+
+<ParamField path="Nullable<T>" type="T | null | undefined">
+  Represents values that can be null or undefined
+</ParamField>
+
+<ParamField path="FunctionLike" type="(...args: any[]) => any">
+  Represents any callable function
+</ParamField>
+
+<ParamField path="DateUnit" type="'days' | 'hours' | 'minutes' | 'seconds' | 'milliseconds' | 'months' | 'years'">
+  Time units used in date operations
+</ParamField>
+
+## Module Organization
+
+The Core package is organized into logical modules:
+
+- **Conversion** - Color format conversions
+- **Formatting** - String builders and text manipulation
+- **Validation** - Input validation and type checking
+- **Math** - Random number generation and numeric parsing
+- **Timers** - Interval and timeout management
+- **Date** - Advanced date manipulation with DatePlus
+- **Utilities** - Case-insensitive comparisons and function extensions
+
+<Note>
+  All functions are fully typed with TypeScript and include comprehensive JSDoc documentation for excellent IDE autocomplete support.
+</Note>

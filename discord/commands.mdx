@@ -1,0 +1,321 @@
+---
+title: 'Commands'
+description: 'Find and mention application commands'
+icon: 'terminal'
+---
+
+## Overview
+
+The commands module provides utilities for finding application commands and generating command mentions that users can click.
+
+## findCommand
+
+Search for application commands in a guild or globally from the client.
+
+### Signature
+
+```typescript
+function findCommand(guildOrClient: Guild | Client<true>): {
+  byName(name: string, and?: (command: ApplicationCommand) => boolean): ApplicationCommand | undefined;
+  byId(id: string): ApplicationCommand | undefined;
+  byFilter(filter: (command: ApplicationCommand) => boolean): ApplicationCommand | undefined;
+}
+```
+
+### Usage
+
+<Tabs>
+  <Tab title="Find by Name">
+    ```typescript
+    import { findCommand } from '@magicyan/discord';
+    import { Client } from 'discord.js';
+
+    const client: Client<true> = ...;
+
+    // Find a global command
+    const pingCommand = findCommand(client).byName('ping');
+
+    if (pingCommand) {
+      console.log(`Found command: ${pingCommand.name}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by ID">
+    ```typescript
+    import { findCommand } from '@magicyan/discord';
+
+    const command = findCommand(guild).byId('1234567890');
+
+    if (command) {
+      console.log(`Command: ${command.name}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find with Filter">
+    ```typescript
+    import { findCommand } from '@magicyan/discord';
+    import { ApplicationCommandType } from 'discord.js';
+
+    // Find a specific user context menu command
+    const userCommand = findCommand(client).byFilter(
+      cmd => cmd.type === ApplicationCommandType.User
+    );
+
+    // Find command with additional condition
+    const adminCommand = findCommand(guild).byName(
+      'admin',
+      cmd => cmd.defaultMemberPermissions?.has('Administrator') ?? false
+    );
+    ```
+  </Tab>
+</Tabs>
+
+### Guild vs Global Commands
+
+<CodeGroup>
+
+```typescript Guild Commands
+import { findCommand } from '@magicyan/discord';
+import { Guild } from 'discord.js';
+
+const guild: Guild = ...;
+
+// Search in guild-specific commands
+const guildCommand = findCommand(guild).byName('settings');
+```
+
+```typescript Global Commands
+import { findCommand } from '@magicyan/discord';
+import { Client } from 'discord.js';
+
+const client: Client<true> = ...;
+
+// Search in global commands
+const globalCommand = findCommand(client).byName('help');
+```
+
+</CodeGroup>
+
+## commandMention
+
+Generate clickable command mentions for use in messages.
+
+### Signature
+
+```typescript
+function commandMention(
+  command: { id: string; name: string },
+  group?: string,
+  subcommand?: string
+): string;
+
+function commandMention(
+  command: { id: string; name: string },
+  subcommand?: string
+): string;
+```
+
+### Usage
+
+<Tabs>
+  <Tab title="Basic Command">
+    ```typescript
+    import { findCommand, commandMention } from '@magicyan/discord';
+
+    const ping = findCommand(client).byName('ping');
+
+    if (ping) {
+      const mention = commandMention(ping);
+      // Result: </ping:1234567890>
+      
+      await channel.send(`Try ${mention} to check latency!`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Subcommand">
+    ```typescript
+    import { findCommand, commandMention } from '@magicyan/discord';
+
+    const configCommand = findCommand(guild).byName('config');
+
+    if (configCommand) {
+      // Mention a subcommand
+      const mention = commandMention(configCommand, 'set');
+      // Result: </config set:1234567890>
+      
+      await channel.send(`Use ${mention} to change settings`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Group Subcommand">
+    ```typescript
+    import { findCommand, commandMention } from '@magicyan/discord';
+
+    const adminCommand = findCommand(guild).byName('admin');
+
+    if (adminCommand) {
+      // Mention a subcommand in a group
+      const mention = commandMention(adminCommand, 'user', 'ban');
+      // Result: </admin user ban:1234567890>
+      
+      await channel.send(`Use ${mention} to ban a user`);
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Real-World Examples
+
+### Help Command with Mentions
+
+```typescript
+import { 
+  findCommand, 
+  commandMention, 
+  createEmbed 
+} from '@magicyan/discord';
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function handleHelpCommand(interaction: ChatInputCommandInteraction) {
+  const commands = [
+    { name: 'ping', description: 'Check bot latency' },
+    { name: 'info', description: 'Get server information' },
+    { name: 'settings', description: 'Configure bot settings' }
+  ];
+
+  const commandList = commands
+    .map(({ name, description }) => {
+      const cmd = findCommand(interaction.guild!).byName(name);
+      if (!cmd) return null;
+      
+      const mention = commandMention(cmd);
+      return `${mention} - ${description}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  const embed = createEmbed({
+    title: '📚 Available Commands',
+    description: commandList,
+    color: '#5865F2',
+    timestamp: true
+  });
+
+  await interaction.reply({ embeds: [embed] });
+}
+```
+
+### Command Exists Validation
+
+```typescript
+import { findCommand } from '@magicyan/discord';
+import { Client } from 'discord.js';
+
+function validateCommands(client: Client<true>, requiredCommands: string[]) {
+  const missing: string[] = [];
+  
+  for (const cmdName of requiredCommands) {
+    const command = findCommand(client).byName(cmdName);
+    if (!command) {
+      missing.push(cmdName);
+    }
+  }
+  
+  if (missing.length > 0) {
+    console.error('Missing commands:', missing.join(', '));
+    return false;
+  }
+  
+  return true;
+}
+
+client.on('ready', () => {
+  const isValid = validateCommands(client, ['ping', 'help', 'info']);
+  if (isValid) {
+    console.log('All required commands are registered!');
+  }
+});
+```
+
+### Dynamic Command Menu
+
+```typescript
+import { 
+  findCommand, 
+  commandMention,
+  createRow
+} from '@magicyan/discord';
+import { 
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder 
+} from 'discord.js';
+
+function createCommandMenu(guild: Guild) {
+  const commandNames = ['help', 'info', 'settings', 'stats'];
+  
+  const options = commandNames.map(name => {
+    const cmd = findCommand(guild).byName(name);
+    if (!cmd) return null;
+    
+    return new StringSelectMenuOptionBuilder()
+      .setLabel(cmd.name)
+      .setValue(cmd.id)
+      .setDescription(`Run ${commandMention(cmd)}`);
+  }).filter(Boolean);
+
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('command_menu')
+    .setPlaceholder('Select a command')
+    .addOptions(options);
+
+  return createRow(menu);
+}
+```
+
+## Best Practices
+
+<Note>
+  Always check if a command exists before trying to mention it, as commands may not be registered yet or could be deleted.
+</Note>
+
+<Warning>
+  The `findCommand` function searches the cache. Make sure commands are fully registered before attempting to find them.
+</Warning>
+
+<Tip>
+  Use command mentions instead of backticks in help messages to make commands clickable for users.
+</Tip>
+
+## API Reference
+
+### findCommand(guildOrClient)
+
+<ParamField path="guildOrClient" type="Guild | Client<true>" required>
+  The guild or client to search commands in
+</ParamField>
+
+**Returns:** An object with search methods
+
+- `byName(name, and?)` - Find by command name with optional additional filter
+- `byId(id)` - Find by command ID
+- `byFilter(filter)` - Find by custom filter function
+
+### commandMention(command, ...args)
+
+<ParamField path="command" type="{ id: string; name: string }" required>
+  The command to create a mention for
+</ParamField>
+
+<ParamField path="group" type="string">
+  The subcommand group name (for nested commands)
+</ParamField>
+
+<ParamField path="subcommand" type="string">
+  The subcommand name
+</ParamField>
+
+**Returns:** A clickable command mention string

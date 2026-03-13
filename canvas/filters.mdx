@@ -1,0 +1,531 @@
+---
+title: Filters
+description: Apply CSS-like visual effects to canvas elements with a type-safe API
+---
+
+# Canvas Filters
+
+The `@magicyan/canvas` package provides a comprehensive set of filter functions that generate CSS filter strings for use with the `@napi-rs/canvas` context.
+
+## Overview
+
+Filters allow you to apply visual effects like blur, brightness adjustment, shadows, and color manipulation to canvas elements. The `Filter` object provides a clean, type-safe API for creating these effects.
+
+## Installation
+
+```bash
+npm install @magicyan/canvas @napi-rs/canvas
+```
+
+## Basic Usage
+
+```typescript
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { Filter } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+const image = await loadImage("./photo.jpg");
+
+// Apply a single filter
+ctx.filter = Filter.blur(5);
+ctx.drawImage(image, 0, 0);
+
+// Reset filter
+ctx.filter = "none";
+```
+
+## Available Filters
+
+### blur()
+
+Applies a Gaussian blur effect.
+
+```typescript
+Filter.blur(amount: number): string
+```
+
+**Parameters:**
+- `amount`: Blur radius in pixels
+
+**Example:**
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Subtle blur
+ctx.filter = Filter.blur(2);
+ctx.drawImage(background, 0, 0);
+
+// Heavy blur
+ctx.filter = Filter.blur(15);
+ctx.drawImage(background, 0, 0);
+```
+
+### opacity()
+
+Adjusts the transparency of the element.
+
+```typescript
+Filter.opacity(percentage: number): string
+```
+
+**Parameters:**
+- `percentage`: Opacity level (0-100)
+  - 0 = fully transparent
+  - 100 = fully opaque
+
+**Example:**
+```typescript
+// Semi-transparent
+ctx.filter = Filter.opacity(50);
+ctx.drawImage(overlay, 0, 0);
+
+// Almost invisible
+ctx.filter = Filter.opacity(10);
+ctx.drawImage(watermark, 0, 0);
+```
+
+### brightness()
+
+Adjusts the brightness of the element.
+
+```typescript
+Filter.brightness(percentage: number): string
+```
+
+**Parameters:**
+- `percentage`: Brightness level
+  - < 100 = darker
+  - 100 = original
+  - > 100 = brighter
+
+**Example:**
+```typescript
+// Darker image
+ctx.filter = Filter.brightness(70);
+ctx.drawImage(image, 0, 0);
+
+// Brighter image
+ctx.filter = Filter.brightness(150);
+ctx.drawImage(image, 0, 0);
+```
+
+### contrast()
+
+Adjusts the contrast of the element.
+
+```typescript
+Filter.contrast(percentage: number): string
+```
+
+**Parameters:**
+- `percentage`: Contrast level
+  - < 100 = less contrast
+  - 100 = original
+  - > 100 = more contrast
+
+**Example:**
+```typescript
+// Low contrast
+ctx.filter = Filter.contrast(50);
+ctx.drawImage(image, 0, 0);
+
+// High contrast
+ctx.filter = Filter.contrast(200);
+ctx.drawImage(image, 0, 0);
+```
+
+### grayscale()
+
+Converts the element to grayscale.
+
+```typescript
+Filter.grayscale(percentage: number): string
+```
+
+**Parameters:**
+- `percentage`: Grayscale amount (0-100)
+  - 0 = original colors
+  - 100 = fully grayscale
+
+**Example:**
+```typescript
+// Partial grayscale
+ctx.filter = Filter.grayscale(50);
+ctx.drawImage(image, 0, 0);
+
+// Full grayscale (black and white)
+ctx.filter = Filter.grayscale(100);
+ctx.drawImage(image, 0, 0);
+```
+
+### sepia()
+
+Applies a sepia tone effect.
+
+```typescript
+Filter.sepia(percentage: number): string
+```
+
+**Parameters:**
+- `percentage`: Sepia amount (0-100)
+  - 0 = no effect
+  - 100 = full sepia
+
+**Example:**
+```typescript
+// Vintage photo effect
+ctx.filter = Filter.sepia(80);
+ctx.drawImage(image, 0, 0);
+```
+
+### invert()
+
+Inverts the colors of the element.
+
+```typescript
+Filter.invert(percentage: number): string
+```
+
+**Parameters:**
+- `percentage`: Inversion amount (0-100)
+  - 0 = original colors
+  - 100 = fully inverted
+
+**Example:**
+```typescript
+// Full color inversion
+ctx.filter = Filter.invert(100);
+ctx.drawImage(image, 0, 0);
+
+// Partial inversion
+ctx.filter = Filter.invert(50);
+ctx.drawImage(image, 0, 0);
+```
+
+### hueRotate()
+
+Rotates the hue of the element's colors.
+
+```typescript
+Filter.hueRotate(deg: number): string
+```
+
+**Parameters:**
+- `deg`: Rotation angle in degrees (0-360)
+
+**Example:**
+```typescript
+// Shift colors
+ctx.filter = Filter.hueRotate(90);
+ctx.drawImage(image, 0, 0);
+
+// Full rotation (back to original)
+ctx.filter = Filter.hueRotate(360);
+ctx.drawImage(image, 0, 0);
+```
+
+### dropShadow()
+
+Applies a drop shadow effect.
+
+```typescript
+Filter.dropShadow(
+  x: number,
+  y: number,
+  blur: number,
+  color?: StrOr<CssColors>
+): string
+```
+
+**Parameters:**
+- `x`: Horizontal shadow offset in pixels
+- `y`: Vertical shadow offset in pixels
+- `blur`: Shadow blur radius in pixels
+- `color`: Shadow color (default: "black")
+
+**Example:**
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Basic shadow
+ctx.filter = Filter.dropShadow(2, 2, 4, "black");
+ctx.drawImage(image, 100, 100);
+
+// Soft shadow
+ctx.filter = Filter.dropShadow(0, 4, 8, "rgba(0, 0, 0, 0.3)");
+ctx.drawImage(card, 50, 50);
+
+// Colored shadow
+ctx.filter = Filter.dropShadow(3, 3, 6, "#667eea");
+ctx.drawImage(icon, 200, 200);
+```
+
+## Combining Filters
+
+Multiple filters can be combined by joining them with spaces:
+
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Combine multiple effects
+ctx.filter = [
+  Filter.brightness(120),
+  Filter.contrast(110),
+  Filter.dropShadow(2, 2, 4, "black")
+].join(" ");
+
+ctx.drawImage(image, 0, 0);
+```
+
+### Order Matters
+
+Filters are applied in the order they are specified:
+
+```typescript
+// Blur then darken
+ctx.filter = [Filter.blur(5), Filter.brightness(70)].join(" ");
+
+// Darken then blur (different result)
+ctx.filter = [Filter.brightness(70), Filter.blur(5)].join(" ");
+```
+
+## Practical Examples
+
+### Discord Welcome Card
+
+```typescript
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { Filter, CanvasContextFont } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 400);
+const ctx = canvas.getContext("2d");
+
+// Blurred background
+const background = await loadImage("./server-banner.jpg");
+ctx.filter = Filter.blur(8);
+ctx.drawImage(background, 0, 0, 800, 400);
+ctx.filter = "none";
+
+// Dark overlay
+ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+ctx.fillRect(0, 0, 800, 400);
+
+// Avatar with shadow
+const avatar = await loadImage("./avatar.png");
+ctx.filter = Filter.dropShadow(0, 4, 8, "rgba(0, 0, 0, 0.5)");
+ctx.drawImage(avatar, 50, 100, 200, 200);
+ctx.filter = "none";
+
+// Welcome text
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 48,
+  weight: "bold"
+});
+ctx.fillStyle = "white";
+ctx.fillText("Welcome to the server!", 300, 200);
+```
+
+### Photo Filter Effects
+
+```typescript
+const image = await loadImage("./photo.jpg");
+const filters = {
+  vintage: [Filter.sepia(80), Filter.contrast(90)].join(" "),
+  dramatic: [Filter.contrast(150), Filter.brightness(90)].join(" "),
+  dreamy: [Filter.blur(3), Filter.brightness(110), Filter.opacity(90)].join(" "),
+  cool: [Filter.hueRotate(180), Filter.contrast(120)].join(" "),
+  warm: [Filter.hueRotate(-20), Filter.brightness(105)].join(" ")
+};
+
+// Apply vintage filter
+ctx.filter = filters.vintage;
+ctx.drawImage(image, 0, 0);
+```
+
+### Rank Card with Effects
+
+```typescript
+import { Filter, setGradientStops } from "@magicyan/canvas";
+
+const canvas = createCanvas(900, 300);
+const ctx = canvas.getContext("2d");
+
+// Background with subtle blur
+const bg = await loadImage("./pattern.png");
+ctx.filter = Filter.blur(2);
+ctx.drawImage(bg, 0, 0, 900, 300);
+ctx.filter = "none";
+
+// Card background with gradient
+const gradient = ctx.createLinearGradient(0, 0, 900, 0);
+setGradientStops(gradient, {
+  0: "rgba(102, 126, 234, 0.9)",
+  1: "rgba(118, 75, 162, 0.9)"
+});
+ctx.fillStyle = gradient;
+ctx.roundRect(50, 50, 800, 200, 20);
+ctx.fill();
+
+// Avatar with glow effect
+const avatar = await loadImage("./avatar.png");
+ctx.filter = [
+  Filter.dropShadow(0, 0, 20, "rgba(102, 126, 234, 0.8)"),
+  Filter.brightness(110)
+].join(" ");
+ctx.drawImage(avatar, 80, 80, 140, 140);
+ctx.filter = "none";
+```
+
+### Disabled/Inactive State
+
+```typescript
+// Make image appear disabled
+ctx.filter = [
+  Filter.grayscale(100),
+  Filter.opacity(40),
+  Filter.brightness(110)
+].join(" ");
+ctx.drawImage(disabledButton, 0, 0);
+```
+
+### Glow Effect
+
+```typescript
+// Draw icon multiple times with increasing blur for glow
+const icon = await loadImage("./icon.png");
+
+// Outer glow
+ctx.filter = [Filter.blur(20), Filter.opacity(30)].join(" ");
+ctx.drawImage(icon, 100, 100, 100, 100);
+
+ctx.filter = [Filter.blur(10), Filter.opacity(50)].join(" ");
+ctx.drawImage(icon, 100, 100, 100, 100);
+
+// Main icon
+ctx.filter = "none";
+ctx.drawImage(icon, 100, 100, 100, 100);
+```
+
+### Night Mode
+
+```typescript
+// Convert to night mode appearance
+ctx.filter = [
+  Filter.brightness(70),
+  Filter.contrast(120),
+  Filter.hueRotate(180)
+].join(" ");
+ctx.drawImage(image, 0, 0);
+```
+
+## Performance Tips
+
+### Reset Filters
+
+Always reset filters when done to avoid affecting subsequent draws:
+
+```typescript
+ctx.filter = Filter.blur(10);
+ctx.drawImage(background, 0, 0);
+ctx.filter = "none"; // Reset
+```
+
+### Minimize Filter Changes
+
+Group elements with the same filter to reduce context switches:
+
+```typescript
+// Good: Apply filter once for multiple elements
+ctx.filter = Filter.dropShadow(2, 2, 4, "black");
+ctx.drawImage(icon1, 0, 0);
+ctx.drawImage(icon2, 100, 0);
+ctx.drawImage(icon3, 200, 0);
+ctx.filter = "none";
+
+// Less optimal: Change filter repeatedly
+ctx.filter = Filter.dropShadow(2, 2, 4, "black");
+ctx.drawImage(icon1, 0, 0);
+ctx.filter = "none";
+ctx.filter = Filter.dropShadow(2, 2, 4, "black");
+ctx.drawImage(icon2, 100, 0);
+ctx.filter = "none";
+```
+
+### Pre-render Filtered Elements
+
+For complex filters used repeatedly, pre-render to an off-screen canvas:
+
+```typescript
+const offscreen = createCanvas(200, 200);
+const offCtx = offscreen.getContext("2d");
+
+// Apply expensive filter once
+offCtx.filter = [
+  Filter.blur(10),
+  Filter.brightness(120),
+  Filter.contrast(130)
+].join(" ");
+offCtx.drawImage(complexImage, 0, 0);
+
+// Reuse filtered result multiple times
+ctx.drawImage(offscreen, 0, 0);
+ctx.drawImage(offscreen, 250, 0);
+ctx.drawImage(offscreen, 500, 0);
+```
+
+## Type Definitions
+
+All filter functions are exported both as methods on the `Filter` object and as individual named exports:
+
+```typescript
+import { 
+  Filter,           // Object with all filters
+  blur,             // Individual exports
+  brightness,
+  contrast,
+  grayscale,
+  sepia,
+  invert,
+  opacity,
+  hueRotate,
+  dropShadow
+} from "@magicyan/canvas";
+
+// Use as object methods
+ctx.filter = Filter.blur(5);
+
+// Or use individual functions
+ctx.filter = blur(5);
+```
+
+## Best Practices
+
+1. **Always reset filters**: Set `ctx.filter = "none"` after applying filters
+2. **Use transparency carefully**: Combine `opacity()` with other effects for natural results
+3. **Test performance**: Filters can be computationally expensive, especially blur
+4. **Consider color spaces**: Some filters work better with certain color profiles
+5. **Combine thoughtfully**: Too many combined filters can degrade quality
+6. **Use constants**: Store commonly used filter combinations in variables
+
+```typescript
+const FILTERS = {
+  SUBTLE_SHADOW: Filter.dropShadow(0, 2, 4, "rgba(0, 0, 0, 0.2)"),
+  DISABLED: [Filter.grayscale(100), Filter.opacity(50)].join(" "),
+  VINTAGE: [Filter.sepia(80), Filter.contrast(90)].join(" ")
+};
+
+ctx.filter = FILTERS.SUBTLE_SHADOW;
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Gradients" icon="palette" href="/canvas/gradients">
+    Create gradients with color stops
+  </Card>
+  <Card title="Fonts" icon="font" href="/canvas/fonts">
+    Manage text rendering and styles
+  </Card>
+</CardGroup>

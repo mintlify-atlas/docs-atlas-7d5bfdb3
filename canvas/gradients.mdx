@@ -1,0 +1,378 @@
+---
+title: Gradients
+description: Create and configure canvas gradients with an easy-to-use API
+---
+
+# Canvas Gradients
+
+The `@magicyan/canvas` package provides utilities to simplify gradient creation and color stop management for `@napi-rs/canvas`.
+
+## Overview
+
+Instead of manually calling `addColorStop()` multiple times, you can use `setGradientStops()` to configure all color stops at once using a simple object syntax.
+
+## Installation
+
+```bash
+npm install @magicyan/canvas @napi-rs/canvas
+```
+
+## Basic Usage
+
+### setGradientStops()
+
+The `setGradientStops()` function accepts any gradient type from `@napi-rs/canvas` and an object mapping offsets to colors.
+
+```typescript
+import { createCanvas } from "@napi-rs/canvas";
+import { setGradientStops } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+// Create a linear gradient
+const gradient = ctx.createLinearGradient(0, 0, 800, 0);
+
+// Set multiple color stops at once
+setGradientStops(gradient, {
+  0: "red",
+  0.5: "yellow",
+  1: "green"
+});
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 600);
+```
+
+### Function Signature
+
+```typescript
+function setGradientStops<T extends ContextGradient>(
+  gradient: T,
+  stops: ContextGradientStops
+): ContextGradient
+```
+
+**Parameters:**
+- `gradient`: Any canvas gradient object (linear, radial, or conic)
+- `stops`: Object where keys are numbers (0-1) and values are color strings
+
+**Returns:**
+- The same gradient object for chaining
+
+## Gradient Types
+
+### Linear Gradients
+
+Create gradients that transition along a straight line.
+
+```typescript
+import { setGradientStops } from "@magicyan/canvas";
+
+// Horizontal gradient
+const horizontal = ctx.createLinearGradient(0, 0, canvas.width, 0);
+setGradientStops(horizontal, {
+  0: "#667eea",
+  1: "#764ba2"
+});
+
+// Vertical gradient
+const vertical = ctx.createLinearGradient(0, 0, 0, canvas.height);
+setGradientStops(vertical, {
+  0: "#f093fb",
+  1: "#f5576c"
+});
+
+// Diagonal gradient
+const diagonal = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+setGradientStops(diagonal, {
+  0: "#4facfe",
+  1: "#00f2fe"
+});
+```
+
+### Radial Gradients
+
+Create circular gradients emanating from a center point.
+
+```typescript
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+const radius = Math.min(canvas.width, canvas.height) / 2;
+
+const radial = ctx.createRadialGradient(
+  centerX, centerY, 0,    // Inner circle
+  centerX, centerY, radius // Outer circle
+);
+
+setGradientStops(radial, {
+  0: "white",
+  0.5: "skyblue",
+  1: "navy"
+});
+
+ctx.fillStyle = radial;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+```
+
+### Conic Gradients
+
+Create gradients that rotate around a center point.
+
+```typescript
+const conic = ctx.createConicGradient(
+  0,                        // Start angle (radians)
+  canvas.width / 2,         // Center X
+  canvas.height / 2         // Center Y
+);
+
+setGradientStops(conic, {
+  0: "red",
+  0.25: "yellow",
+  0.5: "lime",
+  0.75: "cyan",
+  1: "red"
+});
+
+ctx.fillStyle = conic;
+ctx.arc(canvas.width / 2, canvas.height / 2, 200, 0, Math.PI * 2);
+ctx.fill();
+```
+
+## Color Formats
+
+The `setGradientStops()` function accepts multiple color formats:
+
+### CSS Named Colors
+
+```typescript
+setGradientStops(gradient, {
+  0: "coral",
+  0.5: "lightseagreen",
+  1: "mediumslateblue"
+});
+```
+
+<Note>
+  The package includes type definitions for all CSS color names with autocomplete support.
+</Note>
+
+### Hex Colors
+
+```typescript
+setGradientStops(gradient, {
+  0: "#ff6b6b",
+  0.5: "#4ecdc4",
+  1: "#45b7d1"
+});
+```
+
+### RGB/RGBA
+
+```typescript
+setGradientStops(gradient, {
+  0: "rgb(255, 107, 107)",
+  0.5: "rgba(78, 205, 196, 0.8)",
+  1: "rgba(69, 183, 209, 0.5)"
+});
+```
+
+### HSL/HSLA
+
+```typescript
+setGradientStops(gradient, {
+  0: "hsl(0, 100%, 50%)",
+  0.5: "hsl(180, 100%, 50%)",
+  1: "hsl(240, 100%, 50%)"
+});
+```
+
+## Advanced Examples
+
+### Multi-Stop Gradient
+
+Create smooth transitions with many color stops:
+
+```typescript
+const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+
+setGradientStops(gradient, {
+  0: "#ee0979",
+  0.2: "#ff6a00",
+  0.4: "#ffd800",
+  0.6: "#a8ff78",
+  0.8: "#00d4ff",
+  1: "#6a00ff"
+});
+```
+
+### Background with Overlay
+
+Combine gradients with transparency:
+
+```typescript
+// Base gradient
+const base = ctx.createLinearGradient(0, 0, 0, canvas.height);
+setGradientStops(base, {
+  0: "#2c3e50",
+  1: "#3498db"
+});
+ctx.fillStyle = base;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Overlay gradient with transparency
+const overlay = ctx.createRadialGradient(
+  canvas.width / 2, canvas.height / 2, 0,
+  canvas.width / 2, canvas.height / 2, canvas.width / 2
+);
+setGradientStops(overlay, {
+  0: "rgba(255, 255, 255, 0.2)",
+  1: "rgba(0, 0, 0, 0.3)"
+});
+ctx.fillStyle = overlay;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+```
+
+### Text with Gradient Fill
+
+```typescript
+import { CanvasContextFont, setGradientStops } from "@magicyan/canvas";
+
+const gradient = ctx.createLinearGradient(100, 0, 700, 0);
+setGradientStops(gradient, {
+  0: "#f12711",
+  1: "#f5af19"
+});
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 72,
+  weight: "bold",
+  align: "center",
+  baseline: "middle"
+});
+
+ctx.fillStyle = gradient;
+ctx.fillText("GRADIENT TEXT", canvas.width / 2, canvas.height / 2);
+```
+
+### Card Background
+
+Create a modern card design:
+
+```typescript
+function drawCard(ctx, x, y, width, height) {
+  // Rounded rectangle gradient
+  const gradient = ctx.createLinearGradient(x, y, x, y + height);
+  setGradientStops(gradient, {
+    0: "#667eea",
+    1: "#764ba2"
+  });
+
+  ctx.fillStyle = gradient;
+  ctx.roundRect(x, y, width, height, 20);
+  ctx.fill();
+
+  // Shine effect
+  const shine = ctx.createLinearGradient(x, y, x, y + height / 2);
+  setGradientStops(shine, {
+    0: "rgba(255, 255, 255, 0.3)",
+    1: "rgba(255, 255, 255, 0)"
+  });
+
+  ctx.fillStyle = shine;
+  ctx.roundRect(x, y, width, height / 2, [20, 20, 0, 0]);
+  ctx.fill();
+}
+
+drawCard(ctx, 50, 50, 700, 400);
+```
+
+## Type Definitions
+
+### ContextGradientStops
+
+```typescript
+type ContextGradientStops = Record<number, StrOr<CssColors>>;
+```
+
+An object mapping offset numbers (0-1) to color strings. The `StrOr<CssColors>` type provides autocomplete for CSS color names while still accepting any string.
+
+### ContextGradient
+
+```typescript
+interface ContextGradient {
+  addColorStop(offset: number, color: string): void;
+}
+```
+
+Represents any gradient object with an `addColorStop` method.
+
+## Best Practices
+
+### Offset Values
+
+- Use numbers between 0 and 1 (inclusive)
+- 0 = start of gradient, 1 = end of gradient
+- Stops don't need to be evenly spaced
+
+```typescript
+// Good: Creates smooth transitions
+setGradientStops(gradient, {
+  0: "red",
+  0.3: "yellow",
+  0.7: "green",
+  1: "blue"
+});
+```
+
+### Performance
+
+- Reuse gradient objects when possible
+- Create gradients outside of draw loops
+- Limit the number of color stops for better performance
+
+```typescript
+// Create gradient once
+const gradient = ctx.createLinearGradient(0, 0, 800, 0);
+setGradientStops(gradient, {
+  0: "#667eea",
+  1: "#764ba2"
+});
+
+// Reuse in loop
+for (let i = 0; i < items.length; i++) {
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, i * 100, 800, 80);
+}
+```
+
+### Color Consistency
+
+- Use consistent color formats across your gradients
+- Store colors in variables for reuse
+- Consider using hex or RGB for precise color matching
+
+```typescript
+const COLORS = {
+  primary: "#667eea",
+  secondary: "#764ba2",
+  accent: "#f093fb"
+};
+
+setGradientStops(gradient, {
+  0: COLORS.primary,
+  1: COLORS.secondary
+});
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Filters" icon="wand-magic-sparkles" href="/canvas/filters">
+    Apply visual effects to your gradients
+  </Card>
+  <Card title="Fonts" icon="font" href="/canvas/fonts">
+    Add text over gradient backgrounds
+  </Card>
+</CardGroup>

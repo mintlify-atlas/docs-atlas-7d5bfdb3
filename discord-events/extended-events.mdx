@@ -1,0 +1,468 @@
+---
+title: Extended Events Reference
+description: Complete reference for all extended events provided by @magicyan/discord-events
+---
+
+## Role Events
+
+Extended role events provide information about who created, deleted, or updated roles.
+
+### extendedRoleCreate
+
+Triggered when a role is created in a guild. Includes the executor who created the role.
+
+**Event Parameters:**
+```typescript
+[role: Role, executor: GuildMember]
+```
+
+**Example:**
+```typescript
+client.on("extendedRoleCreate", (role, executor) => {
+  console.log(`Role "${role.name}" was created by ${executor.user.username}`);
+  
+  // Send a log to a logging channel
+  const logChannel = guild.channels.cache.get("LOG_CHANNEL_ID");
+  if (logChannel?.isTextBased()) {
+    logChannel.send({
+      embeds: [{
+        title: "Role Created",
+        description: `**Role:** ${role.name}\n**Created by:** ${executor.user.username}`,
+        color: 0x00ff00,
+        timestamp: new Date().toISOString(),
+      }]
+    });
+  }
+});
+```
+
+### extendedRoleDelete
+
+Triggered when a role is deleted from a guild. Includes the executor who deleted the role.
+
+**Event Parameters:**
+```typescript
+[role: Role, executor: GuildMember]
+```
+
+**Example:**
+```typescript
+client.on("extendedRoleDelete", (role, executor) => {
+  console.log(`Role "${role.name}" was deleted by ${executor.user.username}`);
+  
+  // Log role permissions for audit purposes
+  console.log(`Deleted role had permissions: ${role.permissions.toArray().join(", ")}`);
+});
+```
+
+### extendedRoleUpdate
+
+Triggered when a role is updated in a guild. Includes the old role, new role, and the executor who made the changes.
+
+**Event Parameters:**
+```typescript
+[oldRole: Role, newRole: Role, executor: GuildMember]
+```
+
+**Example:**
+```typescript
+client.on("extendedRoleUpdate", (oldRole, newRole, executor) => {
+  const changes: string[] = [];
+  
+  if (oldRole.name !== newRole.name) {
+    changes.push(`Name: ${oldRole.name} → ${newRole.name}`);
+  }
+  
+  if (oldRole.color !== newRole.color) {
+    changes.push(`Color: ${oldRole.hexColor} → ${newRole.hexColor}`);
+  }
+  
+  if (!oldRole.permissions.equals(newRole.permissions)) {
+    changes.push("Permissions were modified");
+  }
+  
+  if (changes.length > 0) {
+    console.log(`Role "${newRole.name}" updated by ${executor.user.username}:`);
+    changes.forEach(change => console.log(`  - ${change}`));
+  }
+});
+```
+
+## Channel Events
+
+Extended channel events provide information about who performed channel actions.
+
+### extendedChannelDelete
+
+Triggered when a guild channel is deleted. Includes the executor who deleted the channel.
+
+**Event Parameters:**
+```typescript
+[channel: NonThreadGuildBasedChannel, executor: GuildMember]
+```
+
+**Example:**
+```typescript
+client.on("extendedChannelDelete", (channel, executor) => {
+  console.log(`Channel #${channel.name} (${channel.type}) was deleted by ${executor.user.username}`);
+  
+  // Archive channel information
+  const channelData = {
+    name: channel.name,
+    type: channel.type,
+    deletedBy: executor.user.username,
+    deletedAt: new Date(),
+  };
+  
+  // Save to database or logging system
+  // saveChannelDeletion(channelData);
+});
+```
+
+<Note>
+  The `extendedChannelDelete` event only fires for guild channels, not DM channels.
+</Note>
+
+## Voice Events
+
+Voice events provide detailed tracking of member voice state changes.
+
+### guildMemberConnect
+
+Triggered when a member joins or switches to a voice channel.
+
+**Event Parameters:**
+```typescript
+[member: GuildMember, channel: VoiceBasedChannel, oldChannel: VoiceBasedChannel | null]
+```
+
+**Example:**
+```typescript
+client.on("guildMemberConnect", (member, channel, oldChannel) => {
+  if (oldChannel) {
+    console.log(`${member.displayName} switched from ${oldChannel.name} to ${channel.name}`);
+  } else {
+    console.log(`${member.displayName} joined ${channel.name}`);
+  }
+  
+  // Welcome message in a text channel
+  const welcomeChannel = channel.guild.channels.cache.get("WELCOME_CHANNEL_ID");
+  if (welcomeChannel?.isTextBased()) {
+    welcomeChannel.send(`${member} joined voice channel ${channel}!`);
+  }
+});
+```
+
+### guildMemberDisconnect
+
+Triggered when a member leaves or switches from a voice channel.
+
+**Event Parameters:**
+```typescript
+[member: GuildMember, channel: VoiceBasedChannel, newChannel: VoiceBasedChannel | null]
+```
+
+**Example:**
+```typescript
+client.on("guildMemberDisconnect", (member, channel, newChannel) => {
+  if (newChannel) {
+    console.log(`${member.displayName} left ${channel.name} and joined ${newChannel.name}`);
+  } else {
+    console.log(`${member.displayName} left ${channel.name}`);
+  }
+  
+  // Track voice channel activity time
+  // saveVoiceActivity(member.id, channel.id, "left");
+});
+```
+
+### guildMemberMoved
+
+Triggered when a member is moved between voice channels by another member (moderator action).
+
+**Event Parameters:**
+```typescript
+[member: GuildMember, executor: GuildMember, oldChannel: VoiceBasedChannel, newChannel: VoiceBasedChannel]
+```
+
+**Example:**
+```typescript
+client.on("guildMemberMoved", (member, executor, oldChannel, newChannel) => {
+  console.log(
+    `${executor.displayName} moved ${member.displayName} from ${oldChannel.name} to ${newChannel.name}`
+  );
+  
+  // Notify the moved member
+  member.send(
+    `You were moved from ${oldChannel.name} to ${newChannel.name} by ${executor.displayName}`
+  ).catch(() => {});
+});
+```
+
+## User Moderation Events
+
+Moderation events track bans, kicks, and timeouts with full context.
+
+### userBanAdd
+
+Triggered when a user is banned from a guild.
+
+**Event Parameters:**
+```typescript
+[user: User, executor: GuildMember, reason: string | null, guild: Guild]
+```
+
+**Example:**
+```typescript
+client.on("userBanAdd", (user, executor, reason, guild) => {
+  console.log(`${user.username} was banned from ${guild.name}`);
+  console.log(`Banned by: ${executor.user.username}`);
+  console.log(`Reason: ${reason || "No reason provided"}`);
+  
+  // Log to moderation channel
+  const modChannel = guild.channels.cache.get("MOD_LOG_CHANNEL_ID");
+  if (modChannel?.isTextBased()) {
+    modChannel.send({
+      embeds: [{
+        title: "Member Banned",
+        fields: [
+          { name: "User", value: `${user.username} (${user.id})`, inline: true },
+          { name: "Moderator", value: executor.user.username, inline: true },
+          { name: "Reason", value: reason || "No reason provided" },
+        ],
+        color: 0xff0000,
+        timestamp: new Date().toISOString(),
+      }]
+    });
+  }
+});
+```
+
+### userBanRemove
+
+Triggered when a user is unbanned from a guild.
+
+**Event Parameters:**
+```typescript
+[user: User, executor: GuildMember, guild: Guild]
+```
+
+**Example:**
+```typescript
+client.on("userBanRemove", (user, executor, guild) => {
+  console.log(`${user.username} was unbanned from ${guild.name} by ${executor.user.username}`);
+  
+  // Send unban notification
+  user.send(
+    `You have been unbanned from ${guild.name}. You can now rejoin the server.`
+  ).catch(() => {});
+});
+```
+
+### userKick
+
+Triggered when a user is kicked from a guild.
+
+**Event Parameters:**
+```typescript
+[user: User, executor: GuildMember, reason: string | null, guild: Guild]
+```
+
+**Example:**
+```typescript
+client.on("userKick", (user, executor, reason, guild) => {
+  console.log(`${user.username} was kicked from ${guild.name}`);
+  console.log(`Kicked by: ${executor.user.username}`);
+  console.log(`Reason: ${reason || "No reason provided"}`);
+  
+  // Update moderation statistics
+  // updateModStats(executor.id, "kick");
+});
+```
+
+### guildMemberTimeoutAdd
+
+Triggered when a member is timed out (muted).
+
+**Event Parameters:**
+```typescript
+[member: GuildMember, executor: GuildMember, expireAt: Date, reason: string | null]
+```
+
+**Example:**
+```typescript
+client.on("guildMemberTimeoutAdd", (member, executor, expireAt, reason) => {
+  const duration = expireAt.getTime() - Date.now();
+  const minutes = Math.floor(duration / 60000);
+  
+  console.log(`${member.displayName} was timed out for ${minutes} minutes`);
+  console.log(`Timeout by: ${executor.user.username}`);
+  console.log(`Reason: ${reason || "No reason provided"}`);
+  console.log(`Expires at: ${expireAt.toLocaleString()}`);
+  
+  // Notify member
+  member.send(
+    `You have been timed out in ${member.guild.name} until ${expireAt.toLocaleString()}.\nReason: ${reason || "No reason provided"}`
+  ).catch(() => {});
+});
+```
+
+### guildMemberTimeoutRemove
+
+Triggered when a member's timeout is removed early.
+
+**Event Parameters:**
+```typescript
+[member: GuildMember, executor: GuildMember]
+```
+
+**Example:**
+```typescript
+client.on("guildMemberTimeoutRemove", (member, executor) => {
+  console.log(`Timeout removed for ${member.displayName} by ${executor.user.username}`);
+  
+  // Notify member
+  member.send(
+    `Your timeout in ${member.guild.name} has been removed by ${executor.user.username}.`
+  ).catch(() => {});
+});
+```
+
+## Webhook Events
+
+Track messages created by webhooks with additional context.
+
+### webhookMessageCreate
+
+Triggered when a message is created by a webhook.
+
+**Event Parameters:**
+```typescript
+[message: Message<true>, webhook: Webhook]
+```
+
+**Example:**
+```typescript
+client.on("webhookMessageCreate", (message, webhook) => {
+  console.log(`Webhook message from: ${webhook.name || "Unknown Webhook"}`);
+  console.log(`Content: ${message.content}`);
+  
+  // Filter webhook messages from specific sources
+  if (webhook.name === "GitHub") {
+    // Handle GitHub webhook messages
+    console.log("GitHub notification received");
+  }
+  
+  // Log webhook activity
+  console.log(`Webhook ID: ${webhook.id}`);
+  console.log(`Channel: ${message.channel.name}`);
+});
+```
+
+## Event Comparison
+
+### Standard vs Extended Events
+
+Here's how extended events improve upon standard Discord.js events:
+
+| Standard Event | Extended Event | Additional Information |
+|----------------|----------------|------------------------|
+| `roleCreate` | `extendedRoleCreate` | Executor member |
+| `roleDelete` | `extendedRoleDelete` | Executor member |
+| `roleUpdate` | `extendedRoleUpdate` | Executor member |
+| `channelDelete` | `extendedChannelDelete` | Executor member |
+| `voiceStateUpdate` | `guildMemberConnect` | Clearer voice join tracking |
+| `voiceStateUpdate` | `guildMemberDisconnect` | Clearer voice leave tracking |
+| `voiceStateUpdate` | `guildMemberMoved` | Executor member who moved |
+| `guildBanAdd` | `userBanAdd` | Executor member, reason |
+| `guildBanRemove` | `userBanRemove` | Executor member |
+| N/A | `userKick` | Full kick event with executor |
+| N/A | `guildMemberTimeoutAdd` | Executor, expiration, reason |
+| N/A | `guildMemberTimeoutRemove` | Executor member |
+| `messageCreate` | `webhookMessageCreate` | Webhook object, filtered |
+
+## Best Practices
+
+### Error Handling
+
+Always handle potential errors when working with audit logs:
+
+```typescript
+client.on("extendedRoleDelete", async (role, executor) => {
+  try {
+    // Your logic here
+    await logRoleDeletion(role, executor);
+  } catch (error) {
+    console.error("Error handling role deletion:", error);
+  }
+});
+```
+
+### Permission Checks
+
+Ensure your bot has the necessary permissions:
+
+```typescript
+client.on("userBanAdd", (user, executor, reason, guild) => {
+  // Check if bot has permission to view audit logs
+  const botMember = guild.members.cache.get(client.user!.id);
+  if (!botMember?.permissions.has("ViewAuditLog")) {
+    console.warn("Bot lacks ViewAuditLog permission");
+    return;
+  }
+  
+  // Process the event
+});
+```
+
+### Rate Limiting
+
+Be mindful of Discord's rate limits when performing actions in response to events:
+
+```typescript
+const notificationCooldowns = new Set();
+
+client.on("guildMemberConnect", (member, channel, oldChannel) => {
+  const cooldownKey = `${member.id}-${channel.id}`;
+  
+  if (notificationCooldowns.has(cooldownKey)) return;
+  
+  notificationCooldowns.add(cooldownKey);
+  setTimeout(() => notificationCooldowns.delete(cooldownKey), 5000);
+  
+  // Send notification
+});
+```
+
+## TypeScript Type Definitions
+
+All events are fully typed. Here are the complete type definitions:
+
+```typescript
+import { Role, GuildMember, NonThreadGuildBasedChannel, VoiceBasedChannel, User, Guild, Message, Webhook } from "discord.js";
+
+interface MagicyanDiscordEvents {
+  // Role events
+  extendedRoleCreate: [role: Role, executor: GuildMember];
+  extendedRoleDelete: [role: Role, executor: GuildMember];
+  extendedRoleUpdate: [oldRole: Role, newRole: Role, executor: GuildMember];
+  
+  // Channel events
+  extendedChannelDelete: [channel: NonThreadGuildBasedChannel, executor: GuildMember];
+  
+  // Voice events
+  guildMemberConnect: [member: GuildMember, channel: VoiceBasedChannel, oldChannel: VoiceBasedChannel | null];
+  guildMemberDisconnect: [member: GuildMember, channel: VoiceBasedChannel, newChannel: VoiceBasedChannel | null];
+  guildMemberMoved: [member: GuildMember, executor: GuildMember, oldChannel: VoiceBasedChannel, newChannel: VoiceBasedChannel];
+  
+  // Moderation events
+  userBanAdd: [user: User, executor: GuildMember, reason: string | null, guild: Guild];
+  userBanRemove: [user: User, executor: GuildMember, guild: Guild];
+  userKick: [user: User, executor: GuildMember, reason: string | null, guild: Guild];
+  guildMemberTimeoutAdd: [member: GuildMember, executor: GuildMember, expireAt: Date, reason: string | null];
+  guildMemberTimeoutRemove: [member: GuildMember, executor: GuildMember];
+  
+  // Webhook events
+  webhookMessageCreate: [message: Message<true>, webhook: Webhook];
+}
+```

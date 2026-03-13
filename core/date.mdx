@@ -1,0 +1,586 @@
+---
+title: Date Manipulation
+description: Advanced date operations with method chaining support via DatePlus
+---
+
+## Overview
+
+The date module provides `DatePlus`, an enhanced Date object with chainable methods for adding, subtracting, setting, and comparing date values. It offers a more intuitive API than native JavaScript Date methods for common date manipulation tasks in Discord bots.
+
+## DatePlus Interface
+
+`DatePlus` extends the native `Date` object with additional methods for date manipulation:
+
+```typescript
+type DateUnit = 
+  | "days" 
+  | "hours" 
+  | "minutes" 
+  | "seconds" 
+  | "milliseconds" 
+  | "months" 
+  | "years";
+
+interface DatePlus extends Date {
+  add(unit: DateUnit, value: number): this;
+  sub(unit: DateUnit, value: number): this;
+  set(unit: DateUnit, value: number): this;
+  diff(other: Date | DatePlus, unit?: DateUnit): number;
+  clone(): DatePlus;
+}
+```
+
+---
+
+## Creating DatePlus Instances
+
+### createDate
+
+Creates a `DatePlus` instance with enhanced manipulation methods.
+
+```typescript
+function createDate(date?: string | number | Date): DatePlus
+```
+
+<ParamField path="date" type="string | number | Date" default="Date.now()">
+  Optional initial date. Can be:
+  - ISO date string (e.g., `"2025-01-01"`)
+  - Timestamp in milliseconds
+  - Existing `Date` object
+  - Omit for current date/time
+</ParamField>
+
+**Returns:** `DatePlus` - An enhanced Date object with chainable methods.
+
+#### Examples
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+// Current date/time
+const now = createDate();
+
+// From ISO string
+const specificDate = createDate("2025-01-01");
+
+// From timestamp
+const fromTimestamp = createDate(1704067200000);
+
+// From existing Date
+const fromDate = createDate(new Date());
+```
+
+---
+
+## Methods
+
+### add
+
+Adds a value to a specific time unit of the date. Supports method chaining.
+
+```typescript
+add(unit: DateUnit, value: number): this
+```
+
+<ParamField path="unit" type="DateUnit" required>
+  The time unit to add to: `"days"`, `"hours"`, `"minutes"`, `"seconds"`, `"milliseconds"`, `"months"`, or `"years"`.
+</ParamField>
+
+<ParamField path="value" type="number" required>
+  Amount to add. Can be negative for subtraction, or fractional (e.g., 1.5 days).
+</ParamField>
+
+**Returns:** `this` - The same DatePlus instance for method chaining.
+
+#### Examples
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+const date = createDate("2025-01-01");
+
+// Add days
+date.add("days", 5);
+console.log(date.toISOString()); // 2025-01-06
+
+// Add hours
+date.add("hours", 12);
+
+// Fractional values
+date.add("days", 1.5); // Adds 1.5 days (36 hours)
+
+// Method chaining
+const future = createDate("2025-01-01")
+  .add("days", 7)
+  .add("hours", 5)
+  .add("minutes", 30);
+```
+
+---
+
+### sub
+
+Subtracts a value from a specific time unit of the date. Supports method chaining.
+
+```typescript
+sub(unit: DateUnit, value: number): this
+```
+
+<ParamField path="unit" type="DateUnit" required>
+  The time unit to subtract from: `"days"`, `"hours"`, `"minutes"`, `"seconds"`, `"milliseconds"`, `"months"`, or `"years"`.
+</ParamField>
+
+<ParamField path="value" type="number" required>
+  Amount to subtract.
+</ParamField>
+
+**Returns:** `this` - The same DatePlus instance for method chaining.
+
+#### Examples
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+const date = createDate("2025-01-10");
+
+// Subtract days
+date.sub("days", 3);
+console.log(date.toISOString()); // 2025-01-07
+
+// Subtract hours
+date.sub("hours", 5);
+
+// Method chaining
+const past = createDate("2025-01-10")
+  .sub("months", 1)
+  .sub("days", 5)
+  .sub("hours", 2);
+```
+
+<Note>
+  `sub()` is equivalent to calling `add()` with a negative value. Both methods support the same units and behavior.
+</Note>
+
+---
+
+### set
+
+Sets a specific time unit to an absolute value. Supports method chaining.
+
+```typescript
+set(unit: DateUnit, value: number): this
+```
+
+<ParamField path="unit" type="DateUnit" required>
+  The time unit to set: `"days"`, `"hours"`, `"minutes"`, `"seconds"`, `"milliseconds"`, `"months"`, or `"years"`.
+</ParamField>
+
+<ParamField path="value" type="number" required>
+  The new absolute value for the specified unit.
+</ParamField>
+
+**Returns:** `this` - The same DatePlus instance for method chaining.
+
+#### Examples
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+const date = createDate("2025-01-15T14:30:00");
+
+// Set hours
+date.set("hours", 15);
+console.log(date.getHours()); // 15
+
+// Set day of month
+date.set("days", 10);
+console.log(date.getDate()); // 10
+
+// Set month (0-11)
+date.set("months", 5);
+console.log(date.getMonth()); // 5 (June)
+
+// Method chaining for precise time
+const precise = createDate()
+  .set("hours", 0)
+  .set("minutes", 0)
+  .set("seconds", 0)
+  .set("milliseconds", 0);
+```
+
+<Warning>
+  When setting `"days"`, it refers to the day of the month (1-31), not adding days. For months, values are 0-indexed (0 = January, 11 = December).
+</Warning>
+
+---
+
+### diff
+
+Calculates the difference between this date and another date in a specified unit.
+
+```typescript
+diff(other: Date | DatePlus, unit?: DateUnit): number
+```
+
+<ParamField path="other" type="Date | DatePlus" required>
+  The other date to compare against.
+</ParamField>
+
+<ParamField path="unit" type="DateUnit" default="milliseconds">
+  The unit to return the difference in. Defaults to `"milliseconds"`.
+</ParamField>
+
+**Returns:** `number` - The absolute difference between the two dates in the specified unit. Always positive.
+
+#### Examples
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+const date1 = createDate("2025-01-01");
+const date2 = createDate("2025-01-10");
+
+// Days difference
+console.log(date2.diff(date1, "days")); // 9
+
+// Hours difference
+console.log(date2.diff(date1, "hours")); // 216
+
+// Milliseconds (default)
+console.log(date2.diff(date1)); // 777600000
+
+// Months difference
+const future = createDate("2026-03-15");
+const now = createDate("2025-01-15");
+console.log(future.diff(now, "months")); // 14
+
+// Years difference
+console.log(future.diff(now, "years")); // 1
+```
+
+<Tip>
+  The `diff` method always returns an absolute (positive) value. The order of dates doesn't matter.
+</Tip>
+
+---
+
+### clone
+
+Creates an independent copy of the DatePlus instance.
+
+```typescript
+clone(): DatePlus
+```
+
+**Returns:** `DatePlus` - A new DatePlus instance with the same date/time value.
+
+#### Examples
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+const original = createDate("2025-01-01");
+const copy = original.clone();
+
+// Modify copy without affecting original
+copy.add("days", 5);
+
+console.log(original.toISOString()); // 2025-01-01
+console.log(copy.toISOString());     // 2025-01-06
+```
+
+---
+
+## Discord Bot Examples
+
+### Timeout/Mute Expiration
+
+```typescript
+import { createDate } from "@magicyan/core";
+import { GuildMember } from "discord.js";
+
+async function muteUser(member: GuildMember, durationMinutes: number) {
+  const expiresAt = createDate()
+    .add("minutes", durationMinutes);
+  
+  await member.timeout(
+    expiresAt.getTime() - Date.now(),
+    `Muted for ${durationMinutes} minutes`
+  );
+  
+  return expiresAt;
+}
+
+// Usage
+const muteExpiry = await muteUser(member, 30); // 30-minute mute
+console.log(`Mute expires: <t:${Math.floor(muteExpiry.getTime() / 1000)}:R>`);
+```
+
+### Event Scheduling
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+interface ScheduledEvent {
+  name: string;
+  startTime: Date;
+  duration: number; // in hours
+}
+
+function createEvent(name: string, daysFromNow: number, durationHours: number): ScheduledEvent {
+  const startTime = createDate()
+    .add("days", daysFromNow)
+    .set("hours", 20)    // 8 PM
+    .set("minutes", 0)
+    .set("seconds", 0);
+  
+  return {
+    name,
+    startTime,
+    duration: durationHours
+  };
+}
+
+function getEventEndTime(event: ScheduledEvent): Date {
+  return createDate(event.startTime)
+    .add("hours", event.duration);
+}
+
+// Usage
+const raid = createEvent("Guild Raid", 3, 2); // 3 days from now, 2 hours long
+const raidEnd = getEventEndTime(raid);
+```
+
+### Cooldown System
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+class CooldownManager {
+  private cooldowns = new Map<string, Date>();
+  
+  setCooldown(userId: string, seconds: number) {
+    const expiresAt = createDate().add("seconds", seconds);
+    this.cooldowns.set(userId, expiresAt);
+  }
+  
+  getRemainingCooldown(userId: string): number {
+    const expiry = this.cooldowns.get(userId);
+    if (!expiry) return 0;
+    
+    const now = createDate();
+    if (now.getTime() >= expiry.getTime()) {
+      this.cooldowns.delete(userId);
+      return 0;
+    }
+    
+    return expiry.getTime() - now.getTime();
+  }
+  
+  hasCooldown(userId: string): boolean {
+    return this.getRemainingCooldown(userId) > 0;
+  }
+}
+
+// Usage
+const cooldowns = new CooldownManager();
+cooldowns.setCooldown("123456789", 60); // 60 second cooldown
+
+if (cooldowns.hasCooldown("123456789")) {
+  const remaining = Math.ceil(cooldowns.getRemainingCooldown("123456789") / 1000);
+  console.log(`Please wait ${remaining} seconds`);
+}
+```
+
+### Time-Based Rewards
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+interface UserData {
+  lastDaily: Date;
+  dailyStreak: number;
+}
+
+function canClaimDaily(userData: UserData): boolean {
+  const now = createDate();
+  const lastClaim = createDate(userData.lastDaily);
+  
+  return now.diff(lastClaim, "hours") >= 24;
+}
+
+function hasLostStreak(userData: UserData): boolean {
+  const now = createDate();
+  const lastClaim = createDate(userData.lastDaily);
+  
+  return now.diff(lastClaim, "hours") > 48;
+}
+
+function claimDaily(userData: UserData) {
+  if (!canClaimDaily(userData)) {
+    const lastClaim = createDate(userData.lastDaily);
+    const nextClaim = lastClaim.clone().add("hours", 24);
+    const wait = nextClaim.diff(createDate(), "hours");
+    throw new Error(`Come back in ${wait} hours`);
+  }
+  
+  if (hasLostStreak(userData)) {
+    userData.dailyStreak = 1;
+  } else {
+    userData.dailyStreak++;
+  }
+  
+  userData.lastDaily = createDate();
+  return userData.dailyStreak;
+}
+```
+
+### Timestamp Formatting
+
+```typescript
+import { createDate } from "@magicyan/core";
+
+function formatDiscordTimestamp(date: Date | DatePlus, style: string = "F"): string {
+  const timestamp = Math.floor(date.getTime() / 1000);
+  return `<t:${timestamp}:${style}>`;
+}
+
+// Usage
+const eventDate = createDate()
+  .add("days", 7)
+  .set("hours", 18)
+  .set("minutes", 0);
+
+const message = `
+Event starts: ${formatDiscordTimestamp(eventDate, "F")}
+Relative time: ${formatDiscordTimestamp(eventDate, "R")}
+Short date: ${formatDiscordTimestamp(eventDate, "d")}
+`;
+```
+
+---
+
+## Common Patterns
+
+<AccordionGroup>
+  <Accordion title="Date Range Validation">
+    ```typescript
+    import { createDate } from "@magicyan/core";
+
+    function isDateInRange(
+      date: Date,
+      startDate: Date,
+      endDate: Date
+    ): boolean {
+      const check = createDate(date);
+      return check.getTime() >= startDate.getTime() && 
+             check.getTime() <= endDate.getTime();
+    }
+
+    function isWithinDays(date: Date, maxDays: number): boolean {
+      const now = createDate();
+      const target = createDate(date);
+      return target.diff(now, "days") <= maxDays;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Start/End of Day">
+    ```typescript
+    import { createDate } from "@magicyan/core";
+
+    function startOfDay(date?: Date): DatePlus {
+      return createDate(date)
+        .set("hours", 0)
+        .set("minutes", 0)
+        .set("seconds", 0)
+        .set("milliseconds", 0);
+    }
+
+    function endOfDay(date?: Date): DatePlus {
+      return createDate(date)
+        .set("hours", 23)
+        .set("minutes", 59)
+        .set("seconds", 59)
+        .set("milliseconds", 999);
+    }
+
+    // Get all events for today
+    const todayStart = startOfDay();
+    const todayEnd = endOfDay();
+    const todayEvents = events.filter(e => 
+      e.date >= todayStart && e.date <= todayEnd
+    );
+    ```
+  </Accordion>
+  
+  <Accordion title="Relative Time Descriptions">
+    ```typescript
+    import { createDate } from "@magicyan/core";
+
+    function getRelativeTime(date: Date): string {
+      const now = createDate();
+      const target = createDate(date);
+      
+      const days = Math.floor(target.diff(now, "days"));
+      const hours = Math.floor(target.diff(now, "hours"));
+      const minutes = Math.floor(target.diff(now, "minutes"));
+      
+      if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+      if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+      return "just now";
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Business Days Calculation">
+    ```typescript
+    import { createDate } from "@magicyan/core";
+
+    function addBusinessDays(date: Date, days: number): DatePlus {
+      const result = createDate(date);
+      let added = 0;
+      
+      while (added < days) {
+        result.add("days", 1);
+        const dayOfWeek = result.getDay();
+        
+        // Skip weekends (0 = Sunday, 6 = Saturday)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          added++;
+        }
+      }
+      
+      return result;
+    }
+
+    // Usage
+    const deadline = addBusinessDays(new Date(), 5); // 5 business days from now
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Method Chaining" icon="link">
+    Chain methods for cleaner, more readable date manipulation code.
+  </Card>
+  
+  <Card title="Use clone()" icon="copy">
+    Clone dates before modifying them to avoid unintended side effects.
+  </Card>
+  
+  <Card title="Consistent Units" icon="ruler">
+    Be consistent with time units throughout your application.
+  </Card>
+  
+  <Card title="Validation" icon="shield-check">
+    Always validate dates from user input or external sources.
+  </Card>
+</CardGroup>
+
+<Note>
+  DatePlus modifies the date in place and returns `this` for chaining. Use `clone()` when you need to preserve the original date.
+</Note>

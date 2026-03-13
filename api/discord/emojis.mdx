@@ -1,0 +1,114 @@
+---
+title: Emojis
+description: API reference for emoji-related functions in @magicyan/discord
+---
+
+## findEmoji
+
+Find custom emojis in a guild or client with flexible filtering options.
+
+```typescript
+function findEmoji(guildOrClient: Guild | Client): EmojiFinder
+```
+
+<ParamField path="guildOrClient" type="Guild | Client" required>
+  A Discord guild or client to search emojis in
+</ParamField>
+
+<ResponseField name="return" type="EmojiFinder">
+  An object with methods to find emojis by various criteria
+</ResponseField>
+
+### Finder Methods
+
+#### byName
+
+Find an emoji by its name with optional animation filter.
+
+```typescript
+byName(
+  name: string,
+  animated?: boolean,
+  and?: (emoji: GuildEmoji) => boolean
+): GuildEmoji | undefined
+```
+
+<ParamField path="name" type="string" required>
+  The emoji name to search for (without colons)
+</ParamField>
+
+<ParamField path="animated" type="boolean">
+  If `true`, only find animated emojis. If `false`, only find static emojis. If `undefined`, find any emoji with the name.
+</ParamField>
+
+<ParamField path="and" type="(emoji) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byId
+
+Find an emoji by its ID with optional animation filter.
+
+```typescript
+byId(
+  id: string,
+  animated?: boolean
+): GuildEmoji | undefined
+```
+
+<ParamField path="id" type="string" required>
+  The emoji ID to search for
+</ParamField>
+
+<ParamField path="animated" type="boolean">
+  If `true`, only find animated emojis. If `false`, only find static emojis. If `undefined`, find any emoji with the ID.
+</ParamField>
+
+#### byFilter
+
+Find an emoji using a custom filter function.
+
+```typescript
+byFilter(
+  filter: (emoji: GuildEmoji) => boolean
+): GuildEmoji | undefined
+```
+
+<ParamField path="filter" type="(emoji) => boolean" required>
+  Custom filter function to match emojis
+</ParamField>
+
+### Examples
+
+```typescript
+import { findEmoji } from "@magicyan/discord";
+
+// Find any emoji by name
+const pepe = findEmoji(guild).byName("pepe");
+
+// Find only animated emojis
+const dance = findEmoji(guild).byName("dance", true);
+
+// Find only static emojis
+const star = findEmoji(guild).byName("star", false);
+
+// Find by ID
+const emoji = findEmoji(guild).byId("123456789");
+
+// Use custom filter
+const customEmoji = findEmoji(guild).byFilter(
+  (emoji) => emoji.name?.startsWith("custom_")
+);
+
+// Find with additional condition
+const managedEmoji = findEmoji(guild).byName(
+  "twitch",
+  undefined,
+  (emoji) => emoji.managed
+);
+
+// Use in messages
+if (pepe) {
+  await channel.send(`Here's pepe: ${pepe}`);
+}
+```

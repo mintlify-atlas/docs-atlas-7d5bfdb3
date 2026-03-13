@@ -1,80 +1,290 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Build your first Discord bot with Magicyan in minutes"
 ---
 
-## Get started in three steps
+## Prerequisites
 
-Get your documentation site running locally and make your first customization.
+Before you begin, make sure you have:
 
-### Step 1: Set up your local environment
+- Node.js 18 or higher installed
+- A Discord bot token ([create one here](https://discord.com/developers/applications))
+- Basic knowledge of TypeScript and Discord.js
+
+## Installation
+
+<Steps>
+  <Step title="Create a new project">
+    Initialize a new Node.js project with TypeScript
+    
+    <CodeGroup>
+    ```bash npm
+    mkdir my-discord-bot
+    cd my-discord-bot
+    npm init -y
+    npm install typescript @types/node tsx -D
+    npx tsc --init
+    ```
+    
+    ```bash yarn
+    mkdir my-discord-bot
+    cd my-discord-bot
+    yarn init -y
+    yarn add typescript @types/node tsx -D
+    npx tsc --init
+    ```
+    
+    ```bash pnpm
+    mkdir my-discord-bot
+    cd my-discord-bot
+    pnpm init
+    pnpm add typescript @types/node tsx -D
+    npx tsc --init
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Install Magicyan and Discord.js">
+    Install the required packages
+    
+    <CodeGroup>
+    ```bash npm
+    npm install discord.js @magicyan/discord @magicyan/core
+    ```
+    
+    ```bash yarn
+    yarn add discord.js @magicyan/discord @magicyan/core
+    ```
+    
+    ```bash pnpm
+    pnpm add discord.js @magicyan/discord @magicyan/core
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Create your bot file">
+    Create a new file `src/index.ts` with the following code:
+    
+    ```typescript src/index.ts
+    import { Client, GatewayIntentBits } from "discord.js";
+    
+    const client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+      ]
+    });
+    
+    client.once("ready", () => {
+      console.log(`Logged in as ${client.user?.tag}!`);
+    });
+    
+    client.login(process.env.DISCORD_TOKEN);
+    ```
+  </Step>
+  
+  <Step title="Add your bot token">
+    Create a `.env` file in your project root:
+    
+    ```bash .env
+    DISCORD_TOKEN=your_bot_token_here
+    ```
+    
+    <Warning>
+    Never commit your `.env` file to version control. Add it to `.gitignore`!
+    </Warning>
+  </Step>
+</Steps>
+
+## Building Your First Command
+
+Now let's create a simple slash command using Magicyan utilities:
+
+```typescript src/commands/hello.ts
+import { ApplicationCommandType, ApplicationCommandOptionType } from "discord.js";
+import { createEmbed } from "@magicyan/discord";
+
+export const helloCommand = {
+  name: "hello",
+  description: "Say hello!",
+  type: ApplicationCommandType.ChatInput,
+  options: [
+    {
+      name: "user",
+      description: "User to greet",
+      type: ApplicationCommandOptionType.User,
+      required: false,
+    }
+  ],
+  async execute(interaction) {
+    const user = interaction.options.getUser("user") || interaction.user;
+    
+    const embed = createEmbed({
+      color: "#7c7c7c",
+      title: "👋 Hello!",
+      description: `Hello ${user}! Welcome to the server!`,
+      thumbnail: user.displayAvatarURL(),
+      timestamp: true,
+      footer: {
+        text: `Requested by ${interaction.user.username}`,
+        iconURL: interaction.user.displayAvatarURL()
+      }
+    });
+    
+    await interaction.reply({ embeds: [embed] });
+  }
+};
+```
+
+## Using Magicyan Utilities
+
+Here's a more advanced example showcasing Magicyan's utilities:
+
+```typescript src/commands/serverinfo.ts
+import { ApplicationCommandType } from "discord.js";
+import { createEmbed, findChannel } from "@magicyan/discord";
+import { formatDate } from "@magicyan/core";
+
+export const serverInfoCommand = {
+  name: "serverinfo",
+  description: "Get server information",
+  type: ApplicationCommandType.ChatInput,
+  async execute(interaction) {
+    const { guild } = interaction;
+    if (!guild) return;
+    
+    // Use findChannel to get specific channels
+    const systemChannel = findChannel(guild).byId(guild.systemChannelId || "");
+    
+    const embed = createEmbed({
+      color: "#7c7c7c",
+      title: `📊 ${guild.name}`,
+      thumbnail: guild.iconURL(),
+      fields: [
+        {
+          name: "👥 Members",
+          value: guild.memberCount.toString(),
+          inline: true
+        },
+        {
+          name: "📅 Created",
+          value: formatDate(guild.createdAt, "DD/MM/YYYY"),
+          inline: true
+        },
+        {
+          name: "👑 Owner",
+          value: `<@${guild.ownerId}>`,
+          inline: true
+        },
+        {
+          name: "💬 Channels",
+          value: guild.channels.cache.size.toString(),
+          inline: true
+        },
+        {
+          name: "😀 Emojis",
+          value: guild.emojis.cache.size.toString(),
+          inline: true
+        },
+        {
+          name: "🎭 Roles",
+          value: guild.roles.cache.size.toString(),
+          inline: true
+        }
+      ],
+      timestamp: true
+    });
+    
+    await interaction.reply({ embeds: [embed] });
+  }
+};
+```
+
+## Registering Commands
+
+Create a script to register your slash commands:
+
+```typescript src/deploy-commands.ts
+import { REST, Routes } from "discord.js";
+import { helloCommand } from "./commands/hello";
+import { serverInfoCommand } from "./commands/serverinfo";
+
+const commands = [helloCommand, serverInfoCommand];
+
+const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN!);
+
+(async () => {
+  try {
+    console.log("Started refreshing application (/) commands.");
+    
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID!),
+      { body: commands }
+    );
+    
+    console.log("Successfully reloaded application (/) commands.");
+  } catch (error) {
+    console.error(error);
+  }
+})();
+```
+
+Run it with:
+
+```bash
+tsx src/deploy-commands.ts
+```
+
+## Key Features Demonstrated
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Accordion title="Creating Rich Embeds">
+    The `createEmbed` function makes it easy to create beautiful embeds with type safety:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+    ```typescript
+    const embed = createEmbed({
+      color: "#7c7c7c",
+      title: "My Title",
+      description: "My description",
+      timestamp: true,
+      footer: "My footer"
+    });
+    ```
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+  
+  <Accordion title="Finding Channels">
+    Use `findChannel` to easily search for channels by various criteria:
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+    ```typescript
+    const channel = findChannel(guild).byName("general");
+    const textChannel = findChannel(guild).byId("123456789");
+    ```
+  </Accordion>
+  
+  <Accordion title="Date Formatting">
+    Format dates easily with the Core package:
+    
+    ```typescript
+    import { formatDate } from "@magicyan/core";
+    
+    formatDate(new Date(), "DD/MM/YYYY HH:mm");
+    ```
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+## Next Steps
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Core Utilities" icon="wrench" href="/core/overview">
+    Explore date formatting, validation, and more
+  </Card>
+  <Card title="Discord Helpers" icon="discord" href="/discord/overview">
+    Learn about all Discord.js utilities
+  </Card>
+  <Card title="Components" icon="grid" href="/discord/components">
+    Build interactive buttons and modals
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/core/check">
+    Browse complete API documentation
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

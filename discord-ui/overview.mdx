@@ -1,0 +1,177 @@
+---
+title: Discord UI Overview
+description: Interactive UI components for Discord.js bots including menus, pagination, and prompts
+---
+
+# Discord UI
+
+The `@magicyan/discord-ui` package provides a set of interactive UI components for building rich Discord bot experiences. It includes pagination menus, multi-view menus, and confirmation prompts with customizable buttons and behavior.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/discord-ui
+```
+
+```bash yarn
+yarn add @magicyan/discord-ui
+```
+
+```bash pnpm
+pnpm add @magicyan/discord-ui
+```
+</CodeGroup>
+
+## Core Components
+
+The package exports three main UI components:
+
+- **`pagination`** - Navigate through multiple embeds with previous/next buttons
+- **`multimenu`** - Display items with multiple view types (list, grid, blocks) and optional select menu
+- **`confirm`** - Show confirmation prompts with confirm/cancel buttons
+
+## Global Configuration
+
+You can customize default button styles and labels globally using the `discordUI()` function:
+
+```typescript
+import { discordUI } from "@magicyan/discord-ui";
+import { ButtonStyle } from "discord.js";
+
+discordUI({
+  prompts: {
+    confirm: {
+      buttons: {
+        confirm: { label: "Yes", style: ButtonStyle.Success },
+        cancel: { label: "No", style: ButtonStyle.Danger }
+      }
+    }
+  },
+  menus: {
+    pagination: {
+      buttons: {
+        next: { label: "Next →" },
+        previous: { label: "← Back" },
+        home: { label: "Home" }
+      }
+    },
+    multimenu: {
+      viewType: "list",
+      placeholder: "Select an option",
+      buttons: {
+        next: { emoji: "➡️" },
+        previous: { emoji: "⬅️" }
+      }
+    }
+  }
+});
+```
+
+## Basic Usage
+
+Here's a quick example of each component:
+
+### Pagination Menu
+
+```typescript
+import { pagination } from "@magicyan/discord-ui";
+import { EmbedBuilder } from "discord.js";
+
+const embeds = [
+  new EmbedBuilder().setTitle("Page 1").setDescription("First page"),
+  new EmbedBuilder().setTitle("Page 2").setDescription("Second page"),
+  new EmbedBuilder().setTitle("Page 3").setDescription("Third page")
+];
+
+await pagination({
+  embeds,
+  render: async (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  }
+});
+```
+
+### Multimenu
+
+```typescript
+import { multimenu } from "@magicyan/discord-ui";
+import { EmbedBuilder } from "discord.js";
+
+await multimenu({
+  items: [
+    {
+      title: "Option 1",
+      description: "First option",
+      option: { label: "Option 1", value: "opt1" }
+    },
+    {
+      title: "Option 2",
+      description: "Second option",
+      option: { label: "Option 2", value: "opt2" }
+    }
+  ],
+  render: async (embeds, components) => {
+    return interaction.reply({ embeds, components, fetchReply: true });
+  },
+  onSelect: async (interaction, item) => {
+    await interaction.reply(`You selected: ${item.title}`);
+  }
+});
+```
+
+### Confirm Prompt
+
+```typescript
+import { confirm } from "@magicyan/discord-ui";
+
+await confirm({
+  render: async (components) => {
+    return interaction.reply({
+      content: "Are you sure you want to proceed?",
+      components,
+      fetchReply: true
+    });
+  },
+  onClick: async (interaction, isCancel) => {
+    if (isCancel) {
+      await interaction.update({ content: "Cancelled!", components: [] });
+    } else {
+      await interaction.update({ content: "Confirmed!", components: [] });
+    }
+  }
+});
+```
+
+## Features
+
+### Customizable Buttons
+
+All components support customizing button labels, emojis, and styles either globally or per-instance.
+
+### Automatic State Management
+
+Buttons are automatically enabled/disabled based on the current state (e.g., disabling "previous" on the first page).
+
+### Flexible Rendering
+
+You control how messages are sent - reply to interactions, send to channels, or edit existing messages.
+
+### Event Callbacks
+
+Handle user interactions with callbacks like `onClick`, `onSelect`, `onClose`, and `onTimeout`.
+
+### Filtering & Timeouts
+
+Optional `filter` function to control who can interact, and `time` parameter for automatic cleanup.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Components" icon="grid-2" href="/discord-ui/components">
+    Explore all available components and their options
+  </Card>
+  <Card title="Discord Package" icon="discord" href="/discord/overview">
+    Learn more Discord.js utilities
+  </Card>
+</CardGroup>

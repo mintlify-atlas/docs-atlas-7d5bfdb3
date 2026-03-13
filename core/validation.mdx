@@ -1,0 +1,614 @@
+---
+title: Data Validation
+description: Validate emails, URLs, numeric strings, and check for defined values
+---
+
+## Overview
+
+The validation module provides utilities for validating common data formats and checking type properties. These functions are essential for handling user input, API responses, and ensuring data integrity in Discord bots.
+
+## String Validation
+
+### isEmail
+
+Validates if a string is a properly formatted email address.
+
+```typescript
+function isEmail(email: string): boolean
+```
+
+<ParamField path="email" type="string" required>
+  The email address to validate.
+</ParamField>
+
+**Returns:** `boolean` - `true` if the email format is valid, otherwise `false`.
+
+#### Examples
+
+```typescript
+import { isEmail } from "@magicyan/core";
+
+// Valid emails
+console.log(isEmail("user@example.com")); // true
+console.log(isEmail("john.doe@company.co.uk")); // true
+console.log(isEmail("test+tag@domain.com")); // true
+
+// Invalid emails
+console.log(isEmail("invalid@")); // false
+console.log(isEmail("@example.com")); // false
+console.log(isEmail("notanemail")); // false
+console.log(isEmail("user@domain")); // false (missing TLD)
+```
+
+#### Discord Bot Usage
+
+```typescript
+import { isEmail } from "@magicyan/core";
+import { CommandInteraction } from "discord.js";
+
+async function handleEmailVerification(interaction: CommandInteraction) {
+  const email = interaction.options.get("email")?.value as string;
+  
+  if (!isEmail(email)) {
+    await interaction.reply({
+      content: "Please provide a valid email address.",
+      ephemeral: true
+    });
+    return;
+  }
+  
+  // Process valid email...
+  await interaction.reply({
+    content: `Verification email sent to ${email}`,
+    ephemeral: true
+  });
+}
+```
+
+<Note>
+  The validation uses a standard email regex pattern that covers most common email formats. However, it may not catch all edge cases defined in RFC 5322.
+</Note>
+
+---
+
+### isUrl
+
+Validates if a string is a properly formatted URL with a valid protocol.
+
+```typescript
+function isUrl(url: string): boolean
+```
+
+<ParamField path="url" type="string" required>
+  The URL to validate.
+</ParamField>
+
+**Returns:** `boolean` - `true` if the URL format is valid, otherwise `false`.
+
+#### Examples
+
+```typescript
+import { isUrl } from "@magicyan/core";
+
+// Valid URLs
+console.log(isUrl("https://example.com")); // true
+console.log(isUrl("http://subdomain.example.com/path")); // true
+console.log(isUrl("ftp://files.example.com")); // true
+console.log(isUrl("https://example.com/path?query=value")); // true
+
+// Invalid URLs
+console.log(isUrl("example.com")); // false (missing protocol)
+console.log(isUrl("//example.com")); // false
+console.log(isUrl("not a url")); // false
+```
+
+#### Link Validation
+
+```typescript
+import { isUrl } from "@magicyan/core";
+import { EmbedBuilder } from "discord.js";
+
+function createLinkEmbed(title: string, url: string, description: string) {
+  if (!isUrl(url)) {
+    throw new Error("Invalid URL provided");
+  }
+  
+  return new EmbedBuilder()
+    .setTitle(title)
+    .setURL(url)
+    .setDescription(description);
+}
+
+// Safe link handling
+async function handleLinkCommand(interaction: CommandInteraction) {
+  const link = interaction.options.get("url")?.value as string;
+  
+  if (!isUrl(link)) {
+    await interaction.reply({
+      content: "Please provide a valid URL (must start with http://, https://, or ftp://)",
+      ephemeral: true
+    });
+    return;
+  }
+  
+  // Process valid URL...
+}
+```
+
+<Tip>
+  The URL must include a protocol (`http://`, `https://`, or `ftp://`). Domain-only strings like `example.com` will return `false`.
+</Tip>
+
+---
+
+### isNumeric
+
+Checks if a string contains only numeric digits (0-9).
+
+```typescript
+function isNumeric(text: string): boolean
+```
+
+<ParamField path="text" type="string" required>
+  The text to check.
+</ParamField>
+
+**Returns:** `boolean` - `true` if the text contains only digits, otherwise `false`.
+
+#### Examples
+
+```typescript
+import { isNumeric } from "@magicyan/core";
+
+// Valid numeric strings
+console.log(isNumeric("12345")); // true
+console.log(isNumeric("0")); // true
+console.log(isNumeric("999999999")); // true
+
+// Invalid numeric strings
+console.log(isNumeric("123a45")); // false
+console.log(isNumeric("12.34")); // false (decimal point)
+console.log(isNumeric("-123")); // false (negative sign)
+console.log(isNumeric("")); // false (empty string)
+console.log(isNumeric("12 34")); // false (space)
+```
+
+#### Input Validation
+
+```typescript
+import { isNumeric } from "@magicyan/core";
+
+// Validate user IDs
+function validateUserId(id: string): boolean {
+  return isNumeric(id) && id.length >= 17 && id.length <= 19;
+}
+
+// Parse quantity input
+function parseQuantity(input: string): number | null {
+  if (!isNumeric(input)) return null;
+  
+  const quantity = parseInt(input, 10);
+  return quantity > 0 ? quantity : null;
+}
+
+// Discord ID validation
+import { CommandInteraction } from "discord.js";
+
+async function handleUserLookup(interaction: CommandInteraction) {
+  const userId = interaction.options.get("user_id")?.value as string;
+  
+  if (!isNumeric(userId)) {
+    await interaction.reply({
+      content: "Invalid user ID. Must contain only numbers.",
+      ephemeral: true
+    });
+    return;
+  }
+  
+  // Fetch user by ID...
+}
+```
+
+<Warning>
+  `isNumeric` only validates digits. It does **not** accept decimal points, negative signs, or scientific notation. For those cases, use `parseFloat()` or `Number()` with validation.
+</Warning>
+
+---
+
+## Type Checking
+
+### isDefined
+
+Checks if a value is neither `null` nor `undefined`. Provides TypeScript type narrowing.
+
+```typescript
+function isDefined<T>(value: T): value is T & {}
+```
+
+<ParamField path="value" type="T" required>
+  The value to check.
+</ParamField>
+
+**Returns:** `boolean` - `true` if the value is not `null` or `undefined`, otherwise `false`. TypeScript will narrow the type to exclude `null` and `undefined`.
+
+#### Examples
+
+```typescript
+import { isDefined } from "@magicyan/core";
+
+// Basic usage
+console.log(isDefined("hello")); // true
+console.log(isDefined(0)); // true
+console.log(isDefined(false)); // true
+console.log(isDefined("")); // true (empty string is defined)
+console.log(isDefined(null)); // false
+console.log(isDefined(undefined)); // false
+
+// Type narrowing
+function processValue(value: string | null | undefined) {
+  if (isDefined(value)) {
+    // TypeScript knows value is string here
+    console.log(value.toUpperCase());
+  }
+}
+
+// Filtering arrays
+const mixed = ["a", null, "b", undefined, "c"];
+const defined = mixed.filter(isDefined);
+console.log(defined); // ["a", "b", "c"]
+```
+
+#### Discord Applications
+
+```typescript
+import { isDefined } from "@magicyan/core";
+import { Guild, User } from "discord.js";
+
+// Safe member access
+function getMemberNickname(guild: Guild, userId: string): string | null {
+  const member = guild.members.cache.get(userId);
+  if (!isDefined(member)) return null;
+  
+  return member.nickname ?? member.user.username;
+}
+
+// Filter valid options
+interface CommandOptions {
+  required: string;
+  optional1?: string;
+  optional2?: number;
+  optional3?: boolean;
+}
+
+function getDefinedOptions(options: CommandOptions) {
+  return {
+    required: options.required,
+    ...Object.entries(options)
+      .filter(([key, value]) => isDefined(value))
+      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
+  };
+}
+
+// Safe chaining alternative
+function getUserTag(user: User | null | undefined): string {
+  if (isDefined(user)) {
+    return user.tag;
+  }
+  return "Unknown User";
+}
+```
+
+<Tip>
+  Use `isDefined` with `Array.prototype.filter()` to remove null and undefined values while maintaining proper TypeScript types.
+</Tip>
+
+---
+
+### isPromise
+
+Checks if a value is a Promise.
+
+```typescript
+function isPromise<T = unknown>(value: unknown): value is Promise<T>
+```
+
+<ParamField path="value" type="unknown" required>
+  The value to check.
+</ParamField>
+
+**Returns:** `boolean` - `true` if the value is a Promise, otherwise `false`. TypeScript will narrow the type to `Promise<T>`.
+
+#### Examples
+
+```typescript
+import { isPromise } from "@magicyan/core";
+
+// Detect promises
+const promise = Promise.resolve(42);
+console.log(isPromise(promise)); // true
+
+const notPromise = 42;
+console.log(isPromise(notPromise)); // false
+
+const asyncFunc = async () => "hello";
+console.log(isPromise(asyncFunc())); // true
+
+// Handle promise or value
+function processResult<T>(result: T | Promise<T>): Promise<T> {
+  if (isPromise(result)) {
+    return result;
+  }
+  return Promise.resolve(result);
+}
+```
+
+#### Async Handler
+
+```typescript
+import { isPromise } from "@magicyan/core";
+
+type Handler<T> = (() => T) | (() => Promise<T>);
+
+async function executeHandler<T>(handler: Handler<T>): Promise<T> {
+  const result = handler();
+  
+  if (isPromise(result)) {
+    return await result;
+  }
+  
+  return result;
+}
+
+// Usage
+const syncHandler = () => "immediate";
+const asyncHandler = async () => {
+  await new Promise(r => setTimeout(r, 1000));
+  return "delayed";
+};
+
+await executeHandler(syncHandler);  // Returns immediately
+await executeHandler(asyncHandler); // Waits for promise
+```
+
+<Note>
+  `isPromise` checks for the presence of a `then` method, which is the standard way to detect Promise-like objects (thenables).
+</Note>
+
+---
+
+## Case-Insensitive Comparisons
+
+These utilities are exported from the `check` module but commonly used with validation.
+
+### equalsIgnoreCase
+
+Compares two strings for equality, ignoring case sensitivity.
+
+```typescript
+function equalsIgnoreCase(text1: string, text2: string): boolean
+```
+
+<ParamField path="text1" type="string" required>
+  The first string to compare.
+</ParamField>
+
+<ParamField path="text2" type="string" required>
+  The second string to compare.
+</ParamField>
+
+**Returns:** `boolean` - `true` if strings are equal (case-insensitive), otherwise `false`.
+
+#### Examples
+
+```typescript
+import { equalsIgnoreCase } from "@magicyan/core";
+
+console.log(equalsIgnoreCase("Hello", "hello")); // true
+console.log(equalsIgnoreCase("World", "WORLD")); // true
+console.log(equalsIgnoreCase("Test", "Toast")); // false
+
+// Command matching
+function matchCommand(input: string, command: string): boolean {
+  return equalsIgnoreCase(input, command);
+}
+
+if (matchCommand(userInput, "PING")) {
+  // Handles "ping", "Ping", "PING", etc.
+}
+```
+
+---
+
+### includesIgnoreCase
+
+Checks if a string contains a query, ignoring case sensitivity.
+
+```typescript
+function includesIgnoreCase(text: string, query: string): boolean
+```
+
+<ParamField path="text" type="string" required>
+  The string to search within.
+</ParamField>
+
+<ParamField path="query" type="string" required>
+  The substring to search for.
+</ParamField>
+
+**Returns:** `boolean` - `true` if query is found (case-insensitive), otherwise `false`.
+
+#### Examples
+
+```typescript
+import { includesIgnoreCase } from "@magicyan/core";
+
+console.log(includesIgnoreCase("Hello World", "world")); // true
+console.log(includesIgnoreCase("Programming", "GRAM")); // true
+console.log(includesIgnoreCase("TypeScript", "Java")); // false
+
+// Search functionality
+function searchUsers(users: User[], query: string): User[] {
+  return users.filter(user => 
+    includesIgnoreCase(user.username, query) ||
+    includesIgnoreCase(user.tag, query)
+  );
+}
+```
+
+---
+
+## Common Patterns
+
+<AccordionGroup>
+  <Accordion title="Comprehensive Input Validation">
+    ```typescript
+    import { isEmail, isUrl, isNumeric, isDefined } from "@magicyan/core";
+
+    interface UserInput {
+      email?: string;
+      website?: string;
+      age?: string;
+      bio?: string;
+    }
+
+    function validateUserInput(input: UserInput): string[] {
+      const errors: string[] = [];
+      
+      if (isDefined(input.email) && !isEmail(input.email)) {
+        errors.push("Invalid email address");
+      }
+      
+      if (isDefined(input.website) && !isUrl(input.website)) {
+        errors.push("Invalid website URL (must include http:// or https://)");
+      }
+      
+      if (isDefined(input.age)) {
+        if (!isNumeric(input.age)) {
+          errors.push("Age must be a number");
+        } else {
+          const age = parseInt(input.age, 10);
+          if (age < 13 || age > 120) {
+            errors.push("Age must be between 13 and 120");
+          }
+        }
+      }
+      
+      return errors;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Safe Data Filtering">
+    ```typescript
+    import { isDefined } from "@magicyan/core";
+
+    // Remove null/undefined from API responses
+    interface APIResponse {
+      users: (User | null)[];
+      messages: (Message | undefined)[];
+    }
+
+    function cleanAPIResponse(response: APIResponse) {
+      return {
+        users: response.users.filter(isDefined),
+        messages: response.messages.filter(isDefined)
+      };
+    }
+
+    // Build query strings
+    function buildQueryString(params: Record<string, string | number | undefined>): string {
+      const defined = Object.entries(params)
+        .filter(([_, value]) => isDefined(value))
+        .map(([key, value]) => `${key}=${value}`);
+      
+      return defined.length > 0 ? `?${defined.join("&")}` : "";
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Command Validation Helper">
+    ```typescript
+    import { isEmail, isUrl, isNumeric, isDefined } from "@magicyan/core";
+    import { CommandInteraction } from "discord.js";
+
+    class CommandValidator {
+      constructor(private interaction: CommandInteraction) {}
+      
+      async requireEmail(optionName: string): Promise<string | null> {
+        const value = this.interaction.options.get(optionName)?.value as string;
+        
+        if (!isDefined(value) || !isEmail(value)) {
+          await this.interaction.reply({
+            content: `Please provide a valid email address for ${optionName}.`,
+            ephemeral: true
+          });
+          return null;
+        }
+        
+        return value;
+      }
+      
+      async requireUrl(optionName: string): Promise<string | null> {
+        const value = this.interaction.options.get(optionName)?.value as string;
+        
+        if (!isDefined(value) || !isUrl(value)) {
+          await this.interaction.reply({
+            content: `Please provide a valid URL for ${optionName} (must start with http:// or https://).`,
+            ephemeral: true
+          });
+          return null;
+        }
+        
+        return value;
+      }
+      
+      async requireNumeric(optionName: string): Promise<number | null> {
+        const value = this.interaction.options.get(optionName)?.value as string;
+        
+        if (!isDefined(value) || !isNumeric(value)) {
+          await this.interaction.reply({
+            content: `Please provide a valid number for ${optionName}.`,
+            ephemeral: true
+          });
+          return null;
+        }
+        
+        return parseInt(value, 10);
+      }
+    }
+
+    // Usage
+    async function handleCommand(interaction: CommandInteraction) {
+      const validator = new CommandValidator(interaction);
+      
+      const email = await validator.requireEmail("email");
+      if (!email) return; // Error already sent
+      
+      const age = await validator.requireNumeric("age");
+      if (!age) return;
+      
+      // Process valid inputs...
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Fail Fast" icon="bolt">
+    Validate input as early as possible to provide immediate feedback to users.
+  </Card>
+  
+  <Card title="Clear Messages" icon="message">
+    When validation fails, explain what format is expected.
+  </Card>
+  
+  <Card title="Type Narrowing" icon="filter">
+    Use `isDefined` to help TypeScript understand your data flow.
+  </Card>
+  
+  <Card title="Combine Checks" icon="shield-check">
+    Chain multiple validators for comprehensive input validation.
+  </Card>
+</CardGroup>

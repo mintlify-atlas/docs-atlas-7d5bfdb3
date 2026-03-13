@@ -1,0 +1,332 @@
+---
+title: Gradient API Reference
+description: Complete API reference for gradient utilities and types
+---
+
+# Gradient API Reference
+
+The `@magicyan/canvas` package provides utilities to simplify gradient creation and color stop management for `@napi-rs/canvas`.
+
+## Functions
+
+### setGradientStops()
+
+```typescript
+function setGradientStops<T extends ContextGradient>(
+  gradient: T,
+  stops: ContextGradientStops
+): ContextGradient
+```
+
+Sets multiple color stops on a gradient object at once using a simple object syntax.
+
+<ParamField path="gradient" type="T extends ContextGradient" required>
+  Any canvas gradient object that has an `addColorStop` method. This includes:
+  - Linear gradients from `ctx.createLinearGradient()`
+  - Radial gradients from `ctx.createRadialGradient()`
+  - Conic gradients from `ctx.createConicGradient()`
+</ParamField>
+
+<ParamField path="stops" type="ContextGradientStops" required>
+  An object mapping offset numbers (0-1) to color strings. Each key represents the position in the gradient (0 = start, 1 = end), and each value is a color in any CSS-compatible format.
+</ParamField>
+
+<ResponseField name="returns" type="ContextGradient">
+  Returns the same gradient object for potential chaining or further manipulation.
+</ResponseField>
+
+**Example:**
+```typescript
+import { createCanvas } from "@napi-rs/canvas";
+import { setGradientStops } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+// Linear gradient
+const gradient = ctx.createLinearGradient(0, 0, 800, 0);
+setGradientStops(gradient, {
+  0: "red",
+  0.5: "yellow",
+  1: "green"
+});
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 800, 600);
+```
+
+**Multi-stop gradient:**
+```typescript
+const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+
+setGradientStops(gradient, {
+  0: "#ee0979",
+  0.2: "#ff6a00",
+  0.4: "#ffd800",
+  0.6: "#a8ff78",
+  0.8: "#00d4ff",
+  1: "#6a00ff"
+});
+```
+
+**With transparency:**
+```typescript
+const gradient = ctx.createRadialGradient(
+  centerX, centerY, 0,
+  centerX, centerY, radius
+);
+
+setGradientStops(gradient, {
+  0: "rgba(255, 255, 255, 0.9)",
+  0.5: "rgba(100, 150, 200, 0.5)",
+  1: "rgba(0, 0, 50, 0.1)"
+});
+```
+
+---
+
+## Type Definitions
+
+### ContextGradientStops
+
+```typescript
+type ContextGradientStops = Record<number, StrOr<CssColors>>;
+```
+
+An object type where keys are numbers (gradient offsets from 0 to 1) and values are color strings.
+
+<ParamField path="keys" type="number">
+  Gradient offset positions:
+  - Must be between 0 and 1 (inclusive)
+  - 0 represents the start of the gradient
+  - 1 represents the end of the gradient
+  - Intermediate values create color stops at those positions
+</ParamField>
+
+<ParamField path="values" type="StrOr<CssColors>">
+  Color values in any CSS-compatible format:
+  - Named colors: `"red"`, `"blue"`, `"coral"`, etc.
+  - Hex colors: `"#ff0000"`, `"#00f"`, etc.
+  - RGB: `"rgb(255, 0, 0)"`, `"rgba(255, 0, 0, 0.5)"`, etc.
+  - HSL: `"hsl(0, 100%, 50%)"`, `"hsla(0, 100%, 50%, 0.5)"`, etc.
+  
+  The `StrOr<CssColors>` type provides autocomplete for CSS color names while accepting any string.
+</ParamField>
+
+**Example:**
+```typescript
+const stops: ContextGradientStops = {
+  0: "#667eea",      // Start color
+  0.5: "#764ba2",    // Middle color
+  1: "#f093fb"       // End color
+};
+
+setGradientStops(gradient, stops);
+```
+
+---
+
+### ContextGradient
+
+```typescript
+interface ContextGradient {
+  addColorStop(offset: number, color: string): void;
+}
+```
+
+Interface representing any gradient object with an `addColorStop` method. This interface is compatible with all gradient types from `@napi-rs/canvas`:
+
+- `CanvasGradient` (linear gradients)
+- `CanvasGradient` (radial gradients)
+- `CanvasGradient` (conic gradients)
+
+<ParamField path="addColorStop" type="(offset: number, color: string) => void" required>
+  Method to add a color stop to the gradient.
+  - `offset`: Position in the gradient (0-1)
+  - `color`: Color value as a string
+</ParamField>
+
+---
+
+### CssColors
+
+```typescript
+type CssColors = 
+  | "black" | "silver" | "gray" | "white"
+  | "maroon" | "red" | "purple" | "fuchsia"
+  | "green" | "lime" | "olive" | "yellow"
+  | "navy" | "blue" | "teal" | "aqua"
+  | "aliceblue" | "antiquewhite" | "aquamarine"
+  // ... and many more CSS color names
+```
+
+Type definition providing autocomplete for all CSS named colors. The complete type includes over 140 CSS color names.
+
+**Example:**
+```typescript
+import { setGradientStops } from "@magicyan/canvas";
+import type { CssColors } from "@magicyan/canvas";
+
+const primaryColor: CssColors = "dodgerblue"; // Autocomplete available
+const secondaryColor: CssColors = "coral";
+
+setGradientStops(gradient, {
+  0: primaryColor,
+  1: secondaryColor
+});
+```
+
+---
+
+### StrOr\<T\>
+
+```typescript
+type StrOr<Completions> = (string & {}) | Completions;
+```
+
+Utility type that provides autocomplete suggestions for specific values while still accepting any string. Used to enable IDE autocomplete for CSS color names without restricting to only those values.
+
+**Benefits:**
+- Get autocomplete for predefined values (like CSS color names)
+- Still accept any custom string value (like hex codes, RGB, etc.)
+- No runtime overhead or validation
+
+**Example:**
+```typescript
+// Autocomplete suggests CSS color names
+const color1: StrOr<CssColors> = "red"; // Autocomplete works
+const color2: StrOr<CssColors> = "#ff0000"; // Also valid
+const color3: StrOr<CssColors> = "rgb(255, 0, 0)"; // Also valid
+```
+
+---
+
+## Usage Examples
+
+### Linear Gradient
+
+```typescript
+import { setGradientStops } from "@magicyan/canvas";
+
+// Horizontal gradient
+const horizontal = ctx.createLinearGradient(0, 0, canvas.width, 0);
+setGradientStops(horizontal, {
+  0: "#667eea",
+  1: "#764ba2"
+});
+ctx.fillStyle = horizontal;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Vertical gradient
+const vertical = ctx.createLinearGradient(0, 0, 0, canvas.height);
+setGradientStops(vertical, {
+  0: "#f093fb",
+  1: "#f5576c"
+});
+
+// Diagonal gradient
+const diagonal = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+setGradientStops(diagonal, {
+  0: "#4facfe",
+  1: "#00f2fe"
+});
+```
+
+### Radial Gradient
+
+```typescript
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+const radius = Math.min(canvas.width, canvas.height) / 2;
+
+const radial = ctx.createRadialGradient(
+  centerX, centerY, 0,    // Inner circle
+  centerX, centerY, radius // Outer circle
+);
+
+setGradientStops(radial, {
+  0: "white",
+  0.5: "skyblue",
+  1: "navy"
+});
+
+ctx.fillStyle = radial;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+```
+
+### Conic Gradient
+
+```typescript
+const conic = ctx.createConicGradient(
+  0,                        // Start angle
+  canvas.width / 2,         // Center X
+  canvas.height / 2         // Center Y
+);
+
+setGradientStops(conic, {
+  0: "red",
+  0.25: "yellow",
+  0.5: "lime",
+  0.75: "cyan",
+  1: "red"  // Complete the circle
+});
+
+ctx.fillStyle = conic;
+ctx.arc(canvas.width / 2, canvas.height / 2, 200, 0, Math.PI * 2);
+ctx.fill();
+```
+
+### Gradient with Text
+
+```typescript
+import { setGradientStops, CanvasContextFont } from "@magicyan/canvas";
+
+const gradient = ctx.createLinearGradient(100, 0, 700, 0);
+setGradientStops(gradient, {
+  0: "#f12711",
+  1: "#f5af19"
+});
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 72,
+  weight: "bold",
+  align: "center"
+});
+
+ctx.fillStyle = gradient;
+ctx.fillText("GRADIENT TEXT", canvas.width / 2, canvas.height / 2);
+```
+
+### Color Formats
+
+```typescript
+import { setGradientStops } from "@magicyan/canvas";
+
+const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+
+// Mix different color formats
+setGradientStops(gradient, {
+  0: "coral",                        // CSS named color
+  0.25: "#4ecdc4",                  // Hex color
+  0.5: "rgb(78, 205, 196)",         // RGB
+  0.75: "rgba(69, 183, 209, 0.8)",  // RGBA with transparency
+  1: "hsl(240, 100%, 50%)"          // HSL
+});
+```
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Gradient Guide" icon="palette" href="/canvas/gradients">
+    Complete guide with examples and best practices
+  </Card>
+  <Card title="Font API" icon="font" href="/api/canvas/font">
+    Apply gradients to text
+  </Card>
+  <Card title="Filter API" icon="wand-magic-sparkles" href="/api/canvas/filters">
+    Apply effects to gradient fills
+  </Card>
+</CardGroup>

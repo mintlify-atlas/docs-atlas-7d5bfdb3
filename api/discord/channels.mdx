@@ -1,0 +1,166 @@
+---
+title: Channels
+description: API reference for channel-related functions in @magicyan/discord
+---
+
+## findChannel
+
+Find channels in a guild with flexible filtering options.
+
+```typescript
+function findChannel<Type extends GuildChannelType = ChannelType.GuildText>(
+  guild: Guild,
+  type?: Type
+): ChannelFinder<Type>
+```
+
+<ParamField path="guild" type="Guild" required>
+  The Discord guild to search channels in
+</ParamField>
+
+<ParamField path="type" type="GuildChannelType">
+  The type of channel to search for. Defaults to `ChannelType.GuildText`
+</ParamField>
+
+<ResponseField name="return" type="ChannelFinder<Type>">
+  An object with methods to find channels by various criteria
+</ResponseField>
+
+### Finder Methods
+
+#### byId
+
+Find a channel by its ID.
+
+```typescript
+byId(id: string): GetChannelType<Type> | undefined
+```
+
+<ParamField path="id" type="string" required>
+  The channel ID to search for
+</ParamField>
+
+#### byName
+
+Find a channel by its name with an optional additional filter.
+
+```typescript
+byName(
+  name: string,
+  and?: (channel: GetChannelType<Type>) => boolean
+): GetChannelType<Type> | undefined
+```
+
+<ParamField path="name" type="string" required>
+  The channel name to search for
+</ParamField>
+
+<ParamField path="and" type="(channel) => boolean">
+  Optional additional filter function
+</ParamField>
+
+#### byFilter
+
+Find a channel using a custom filter function.
+
+```typescript
+byFilter(
+  filter: (channel: GetChannelType<Type>) => boolean
+): GetChannelType<Type> | undefined
+```
+
+<ParamField path="filter" type="(channel) => boolean" required>
+  Custom filter function to match channels
+</ParamField>
+
+#### inCategoryId
+
+Find channels within a specific category by ID.
+
+```typescript
+inCategoryId(id: string): CategoryChannelFinder<Type>
+```
+
+<ParamField path="id" type="string" required>
+  The category ID to search within
+</ParamField>
+
+Returns an object with the same finder methods (`byId`, `byName`, `byFilter`) scoped to that category.
+
+#### inCategoryName
+
+Find channels within a specific category by name.
+
+```typescript
+inCategoryName(name: string): CategoryChannelFinder<Type>
+```
+
+<ParamField path="name" type="string" required>
+  The category name to search within
+</ParamField>
+
+Returns an object with the same finder methods (`byId`, `byName`, `byFilter`) scoped to that category.
+
+### Examples
+
+```typescript
+import { findChannel } from "@magicyan/discord";
+import { ChannelType } from "discord.js";
+
+// Find a text channel by name
+const general = findChannel(guild).byName("general");
+
+// Find a voice channel by ID
+const voice = findChannel(guild, ChannelType.GuildVoice).byId("123456789");
+
+// Find channels in a specific category
+const modChannel = findChannel(guild)
+  .inCategoryName("Moderation")
+  .byName("mod-logs");
+
+// Use a custom filter
+const emptyChannel = findChannel(guild).byFilter(
+  (channel) => channel.members.size === 0
+);
+
+// Find with additional conditions
+const nsfw = findChannel(guild).byName("nsfw", (channel) => channel.nsfw);
+```
+
+---
+
+## getChannelUrlInfo
+
+Extract channel and guild IDs from a Discord channel URL.
+
+```typescript
+function getChannelUrlInfo(url: string): ChannelUrlInfo
+```
+
+<ParamField path="url" type="string" required>
+  A Discord channel URL (format: `https://discord.com/channels/GUILD_ID/CHANNEL_ID`)
+</ParamField>
+
+<ResponseField name="return" type="ChannelUrlInfo">
+  An object containing:
+  - `channelId`: The extracted channel ID (if valid URL)
+  - `guildId`: The extracted guild ID (if valid URL)
+  
+  Returns an empty object `{}` if the URL is invalid.
+</ResponseField>
+
+### Example
+
+```typescript
+import { getChannelUrlInfo } from "@magicyan/discord";
+
+const url = "https://discord.com/channels/123456789/987654321";
+const { channelId, guildId } = getChannelUrlInfo(url);
+
+console.log(channelId); // "987654321"
+console.log(guildId);   // "123456789"
+
+// Invalid URL returns empty object
+const invalid = getChannelUrlInfo("not-a-url");
+console.log(invalid); // {}
+```

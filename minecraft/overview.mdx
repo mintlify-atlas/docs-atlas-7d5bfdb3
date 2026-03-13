@@ -1,0 +1,142 @@
+---
+title: 'Overview'
+description: 'Fetch Minecraft data with fully typed responses'
+icon: 'cube'
+---
+
+The `@magicyan/minecraft` package provides functions to fetch data from various Minecraft APIs with fully typed responses. It includes utilities for retrieving player skins, server status, and Mojang profile information.
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @magicyan/minecraft
+```
+
+```bash pnpm
+pnpm add @magicyan/minecraft
+```
+
+```bash yarn
+yarn add @magicyan/minecraft
+```
+
+</CodeGroup>
+
+## Features
+
+<CardGroup cols={2}>
+  <Card title="Player Skins" icon="shirt" href="/minecraft/skins">
+    Render and fetch Minecraft player skins with customizable poses and options
+  </Card>
+  <Card title="Server Status" icon="server" href="/minecraft/server-status">
+    Check Minecraft server status, player count, and retrieve server icons
+  </Card>
+  <Card title="Mojang API" icon="user" href="/minecraft/mojang-api">
+    Fetch player profiles and session data from Mojang's official API
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+### Fetch a Player's Skin
+
+```typescript
+import { fetchSkinRender } from '@magicyan/minecraft';
+
+const result = await fetchSkinRender('Notch', 'default', 'full');
+
+if (result.success) {
+  console.log('Skin URL:', result.data.url);
+  // Access the buffer: result.data.buffer
+  // Access the arrayBuffer: result.data.arrayBuffer
+}
+```
+
+### Check Server Status
+
+```typescript
+import { fetchServerStatus, isServerOnline } from '@magicyan/minecraft';
+
+const status = await fetchServerStatus('mc.hypixel.net');
+
+if (status.online) {
+  console.log(`Server: ${status.version}`);
+  console.log(`Players: ${status.players.online}/${status.players.max}`);
+  console.log(`MOTD: ${status.motd.clean.join(' ')}`);
+}
+
+// Quick online check
+const online = await isServerOnline('mc.hypixel.net');
+console.log('Server is online:', online);
+```
+
+### Get Player Profile
+
+```typescript
+import { fetchMinecraftProfile } from '@magicyan/minecraft';
+
+const result = await fetchMinecraftProfile('Notch');
+
+if (result.success) {
+  console.log('UUID:', result.data.id);
+  console.log('Name:', result.data.name);
+}
+```
+
+## API Routes
+
+The package uses the following API endpoints:
+
+```typescript
+export const RouteBases = {
+  mojang: 'https://api.mojang.com',
+  mcservices: 'https://api.minecraftservices.com',
+  sessionmojang: 'https://sessionserver.mojang.com',
+  mcsrvstat: 'https://api.mcsrvstat.us',
+  skins: 'https://starlightskins.lunareclipse.studio',
+  mush: 'https://mush.com.br/api',
+};
+```
+
+## Response Format
+
+Most functions return a `FetchResult` type that provides a consistent error handling pattern:
+
+```typescript
+type FetchResult<T> = 
+  | { success: true; data: T }
+  | { success: false; error: string; code: number };
+```
+
+### Success Response
+
+```typescript
+if (result.success) {
+  // TypeScript knows result.data is available
+  console.log(result.data);
+}
+```
+
+### Error Handling
+
+```typescript
+if (!result.success) {
+  console.error(`Error ${result.code}: ${result.error}`);
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Skins API" icon="shirt" href="/minecraft/skins">
+    Learn about rendering player skins with custom poses
+  </Card>
+  <Card title="Server Status" icon="server" href="/minecraft/server-status">
+    Query Minecraft server information
+  </Card>
+  <Card title="Mojang API" icon="user" href="/minecraft/mojang-api">
+    Work with player profiles and sessions
+  </Card>
+</CardGroup>

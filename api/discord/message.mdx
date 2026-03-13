@@ -1,0 +1,242 @@
+---
+title: Message
+description: API reference for message-related functions in @magicyan/discord
+---
+
+## findMessage
+
+Find messages in a text channel with flexible filtering options.
+
+```typescript
+function findMessage(channel: GuildTextBasedChannel): MessageFinder
+```
+
+<ParamField path="channel" type="GuildTextBasedChannel" required>
+  The text-based channel to search messages in
+</ParamField>
+
+<ResponseField name="return" type="MessageFinder">
+  An object with methods to find messages by various criteria
+</ResponseField>
+
+### Finder Methods
+
+#### all
+
+Fetch all messages from the channel up to a specified limit.
+
+```typescript
+async all(limit?: number): Promise<Message[]>
+```
+
+<ParamField path="limit" type="number">
+  Maximum number of messages to fetch. Defaults to `Infinity` (all messages)
+</ParamField>
+
+<ResponseField name="return" type="Promise<Message[]>">
+  A promise that resolves to an array of messages
+</ResponseField>
+
+#### byId
+
+Find a message by its ID from the cache.
+
+```typescript
+byId(id: string): Message | undefined
+```
+
+<ParamField path="id" type="string" required>
+  The message ID to search for
+</ParamField>
+
+#### byContent
+
+Find a message by its text content.
+
+```typescript
+byContent(): ContentMatcher
+```
+
+Returns an object with content matching methods:
+
+##### equals
+
+Find a message with exact content match.
+
+```typescript
+equals(content: string, ignoreCase?: boolean): Message | undefined
+```
+
+<ParamField path="content" type="string" required>
+  The exact content to match
+</ParamField>
+
+<ParamField path="ignoreCase" type="boolean">
+  Whether to perform case-insensitive matching. Defaults to `false`
+</ParamField>
+
+##### include
+
+Find a message that contains the specified content.
+
+```typescript
+include(content: string, ignoreCase?: boolean): Message | undefined
+```
+
+<ParamField path="content" type="string" required>
+  The content to search for within messages
+</ParamField>
+
+<ParamField path="ignoreCase" type="boolean">
+  Whether to perform case-insensitive matching. Defaults to `false`
+</ParamField>
+
+#### byFilter
+
+Find a message using a custom filter function.
+
+```typescript
+byFilter(
+  filter: (message: Message<true>) => boolean
+): Message | undefined
+```
+
+<ParamField path="filter" type="(message) => boolean" required>
+  Custom filter function to match messages
+</ParamField>
+
+### Examples
+
+```typescript
+import { findMessage } from "@magicyan/discord";
+
+// Find message by ID
+const message = findMessage(channel).byId("123456789");
+
+// Find by exact content
+const ping = findMessage(channel).byContent().equals("!ping");
+
+// Find by content (case-insensitive)
+const hello = findMessage(channel).byContent().equals("hello", true);
+
+// Find message containing text
+const mentionMsg = findMessage(channel).byContent().include("@everyone");
+
+// Fetch all messages
+const allMessages = await findMessage(channel).all();
+
+// Fetch limited messages
+const last100 = await findMessage(channel).all(100);
+
+// Use custom filter
+const pinnedMsg = findMessage(channel).byFilter(
+  (msg) => msg.pinned
+);
+
+// Find messages with attachments
+const imageMsg = findMessage(channel).byFilter(
+  (msg) => msg.attachments.size > 0
+);
+```
+
+---
+
+## getMessageURLInfo
+
+Extract message, channel, and guild IDs from a Discord message URL.
+
+```typescript
+function getMessageURLInfo(url: string): MessageURLInfo
+```
+
+<ParamField path="url" type="string" required>
+  A Discord message URL (format: `https://discord.com/channels/GUILD_ID/CHANNEL_ID/MESSAGE_ID`)
+</ParamField>
+
+<ResponseField name="return" type="MessageURLInfo">
+  An object containing:
+  - `messageId`: The extracted message ID (if valid URL)
+  - `channelId`: The extracted channel ID (if valid URL)
+  - `guildId`: The extracted guild ID (if valid URL)
+  
+  Returns an object with `messageId: undefined` if the URL is invalid.
+</ResponseField>
+
+### Example
+
+```typescript
+import { getMessageURLInfo } from "@magicyan/discord";
+
+const url = "https://discord.com/channels/123456789/987654321/111222333";
+const { messageId, channelId, guildId } = getMessageURLInfo(url);
+
+console.log(messageId); // "111222333"
+console.log(channelId); // "987654321"
+console.log(guildId);   // "123456789"
+
+// Invalid URL
+const invalid = getMessageURLInfo("not-a-url");
+console.log(invalid.messageId); // undefined
+```
+
+---
+
+## fetchMessageFromURL
+
+Fetch a message directly from a Discord message URL.
+
+```typescript
+function fetchMessageFromURL(
+  guild: Guild,
+  url: string
+): Promise<Message<true> | null>
+
+function fetchMessageFromURL(
+  client: Client,
+  url: string
+): Promise<Message | null>
+```
+
+<ParamField path="guild" type="Guild" required>
+  The guild context for fetching (overload 1)
+</ParamField>
+
+<ParamField path="client" type="Client" required>
+  The client instance for fetching (overload 2)
+</ParamField>
+
+<ParamField path="url" type="string" required>
+  A Discord message URL to fetch from
+</ParamField>
+
+<ResponseField name="return" type="Promise<Message | null>">
+  A promise that resolves to the fetched message, or `null` if:
+  - The URL is invalid
+  - The channel cannot be accessed
+  - The message cannot be found
+</ResponseField>
+
+### Examples
+
+```typescript
+import { fetchMessageFromURL } from "@magicyan/discord";
+
+// Fetch from guild context
+const messageUrl = "https://discord.com/channels/123/456/789";
+const message = await fetchMessageFromURL(guild, messageUrl);
+
+if (message) {
+  console.log("Message content:", message.content);
+  await message.reply("Found your message!");
+} else {
+  console.log("Message not found or inaccessible");
+}
+
+// Fetch from client context (for DMs or cross-guild)
+const dmMessage = await fetchMessageFromURL(client, messageUrl);
+
+// Use in a command
+await interaction.reply({
+  content: message ? `Message: ${message.content}` : "Invalid message URL"
+});
+```

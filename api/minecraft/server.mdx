@@ -1,0 +1,565 @@
+---
+title: Server API
+description: API reference for Minecraft server status and information retrieval
+---
+
+The Server API provides functions to check Minecraft server status, retrieve server information, and fetch server icons.
+
+## Functions
+
+### fetchServerStatus
+
+Fetches comprehensive status information for a Minecraft server (Java or Bedrock edition).
+
+```typescript
+async function fetchServerStatus(
+    ip: string,
+    bedrock?: boolean
+): Promise<ServerInfo>
+```
+
+<ParamField path="ip" type="string" required>
+  Server IP address or hostname (optionally with port, e.g., `play.example.com:25565`)
+</ParamField>
+
+<ParamField path="bedrock" type="boolean" default="false">
+  Whether to query a Bedrock edition server instead of Java edition
+</ParamField>
+
+<ResponseField name="online" type="boolean" required>
+  Whether the server is online and responding
+</ResponseField>
+
+<ResponseField name="ip" type="string" required>
+  Resolved server IP address
+</ResponseField>
+
+<ResponseField name="port" type="number" required>
+  Server port number
+</ResponseField>
+
+<ResponseField name="hostname" type="string">
+  Server hostname if available
+</ResponseField>
+
+<ResponseField name="debug" type="ServerDebugInfo" required>
+  Debug information about the query
+  
+  <ResponseField name="ping" type="boolean">
+    Whether ping was successful
+  </ResponseField>
+  
+  <ResponseField name="query" type="boolean">
+    Whether query was successful
+  </ResponseField>
+  
+  <ResponseField name="bedrock" type="boolean">
+    Whether this is a Bedrock server
+  </ResponseField>
+  
+  <ResponseField name="srv" type="boolean">
+    Whether SRV record was found
+  </ResponseField>
+  
+  <ResponseField name="cachehit" type="boolean">
+    Whether result was from cache
+  </ResponseField>
+  
+  <ResponseField name="cachetime" type="number">
+    Cache timestamp
+  </ResponseField>
+  
+  <ResponseField name="cacheexpire" type="number">
+    Cache expiration timestamp
+  </ResponseField>
+  
+  <ResponseField name="apiversion" type="number">
+    API version used
+  </ResponseField>
+  
+  <ResponseField name="error" type="object">
+    Error details (only present when `online` is `false`)
+    
+    <ResponseField name="ping" type="string">
+      Ping error message
+    </ResponseField>
+    
+    <ResponseField name="query" type="string">
+      Query error message
+    </ResponseField>
+  </ResponseField>
+</ResponseField>
+
+### When online is true (OnlineServerInfo)
+
+<ResponseField name="version" type="string">
+  Server version string (e.g., "1.20.4")
+</ResponseField>
+
+<ResponseField name="protocol" type="object">
+  Protocol information
+  
+  <ResponseField name="version" type="number">
+    Protocol version number
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Protocol name
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="icon" type="string">
+  Base64-encoded server icon (PNG)
+</ResponseField>
+
+<ResponseField name="software" type="string">
+  Server software (e.g., "Paper", "Spigot", "Vanilla")
+</ResponseField>
+
+<ResponseField name="map" type="object">
+  World/map information
+  
+  <ResponseField name="raw" type="string">
+    Raw map name
+  </ResponseField>
+  
+  <ResponseField name="clean" type="string">
+    Map name without formatting
+  </ResponseField>
+  
+  <ResponseField name="html" type="string">
+    Map name as HTML
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="gamemode" type="string">
+  Server gamemode (e.g., "Survival", "Creative")
+</ResponseField>
+
+<ResponseField name="serverid" type="string">
+  Unique server identifier
+</ResponseField>
+
+<ResponseField name="eula_blocked" type="boolean">
+  Whether server is EULA blocked
+</ResponseField>
+
+<ResponseField name="motd" type="object" required>
+  Message of the Day (server description)
+  
+  <ResponseField name="raw" type="string[]">
+    Raw MOTD lines with formatting codes
+  </ResponseField>
+  
+  <ResponseField name="clean" type="string[]">
+    MOTD lines without formatting
+  </ResponseField>
+  
+  <ResponseField name="html" type="string[]">
+    MOTD lines as HTML
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="players" type="object" required>
+  Player information
+  
+  <ResponseField name="online" type="number">
+    Number of players currently online
+  </ResponseField>
+  
+  <ResponseField name="max" type="number">
+    Maximum player capacity
+  </ResponseField>
+  
+  <ResponseField name="list" type="Array<{ name: string, uuid: string }>">
+    List of online players (if query is enabled)
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="plugins" type="Array<{ name: string, version: string }>">
+  Installed plugins (if query is enabled)
+</ResponseField>
+
+<ResponseField name="mods" type="Array<{ name: string, version: string }>">
+  Installed mods (for modded servers)
+</ResponseField>
+
+<ResponseField name="info" type="object">
+  Additional server information
+  
+  <ResponseField name="raw" type="string[]">
+    Raw info lines
+  </ResponseField>
+  
+  <ResponseField name="clean" type="string[]">
+    Clean info lines
+  </ResponseField>
+  
+  <ResponseField name="html" type="string[]">
+    HTML info lines
+  </ResponseField>
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchServerStatus } from "@magicyan/minecraft";
+
+// Java Edition server
+const status = await fetchServerStatus("mc.hypixel.net");
+
+if (status.online) {
+  console.log(`Server: ${status.hostname}`);
+  console.log(`Version: ${status.version}`);
+  console.log(`Players: ${status.players.online}/${status.players.max}`);
+  console.log(`MOTD: ${status.motd.clean.join(" ")}`);
+  
+  if (status.software) {
+    console.log(`Software: ${status.software}`);
+  }
+  
+  if (status.players.list) {
+    console.log(`\nOnline Players:`);
+    status.players.list.forEach(player => {
+      console.log(`  - ${player.name}`);
+    });
+  }
+  
+  if (status.plugins && status.plugins.length > 0) {
+    console.log(`\nPlugins:`);
+    status.plugins.forEach(plugin => {
+      console.log(`  - ${plugin.name} v${plugin.version}`);
+    });
+  }
+} else {
+  console.log(`Server is offline`);
+  console.log(`Ping Error: ${status.debug.error.ping}`);
+  console.log(`Query Error: ${status.debug.error.query}`);
+}
+
+// Bedrock Edition server
+const bedrockStatus = await fetchServerStatus("play.cubecraft.net", true);
+
+if (bedrockStatus.online) {
+  console.log(`Bedrock Server Online`);
+  console.log(`Players: ${bedrockStatus.players.online}/${bedrockStatus.players.max}`);
+}
+```
+
+---
+
+### isServerOnline
+
+Quickly checks if a Minecraft server is online without fetching full details.
+
+```typescript
+async function isServerOnline(
+    ip: string,
+    bedrock?: boolean
+): Promise<boolean>
+```
+
+<ParamField path="ip" type="string" required>
+  Server IP address or hostname
+</ParamField>
+
+<ParamField path="bedrock" type="boolean" default="false">
+  Whether to check a Bedrock edition server
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if server is online, `false` otherwise
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { isServerOnline } from "@magicyan/minecraft";
+
+// Quick online check
+const online = await isServerOnline("mc.hypixel.net");
+
+if (online) {
+  console.log("Server is online!");
+  // Fetch full details if needed
+  const status = await fetchServerStatus("mc.hypixel.net");
+  // ...
+} else {
+  console.log("Server is offline");
+}
+
+// Check multiple servers in parallel
+const servers = [
+  "mc.hypixel.net",
+  "play.cubecraft.net",
+  "us.mineplex.com"
+];
+
+const results = await Promise.all(
+  servers.map(ip => isServerOnline(ip))
+);
+
+servers.forEach((ip, index) => {
+  console.log(`${ip}: ${results[index] ? "Online" : "Offline"}`);
+});
+```
+
+---
+
+### fetchServerIcon
+
+Fetches a Minecraft server's icon as an image buffer.
+
+```typescript
+async function fetchServerIcon(
+    ip: string
+): Promise<FetchServerIconResult>
+```
+
+<ParamField path="ip" type="string" required>
+  Server IP address or hostname
+</ParamField>
+
+<ResponseField name="success" type="boolean" required>
+  Whether the fetch was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Available when `success` is `true`:
+  
+  <ResponseField name="buffer" type="Buffer">
+    Image data as a Node.js Buffer (PNG format)
+  </ResponseField>
+  
+  <ResponseField name="url" type="string">
+    Final URL of the fetched icon
+  </ResponseField>
+  
+  <ResponseField name="response" type="Response">
+    Raw fetch Response object
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message when `success` is `false`
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code when `success` is `false`
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchServerIcon } from "@magicyan/minecraft";
+import { writeFile } from "fs/promises";
+
+// Fetch and save server icon
+const result = await fetchServerIcon("mc.hypixel.net");
+
+if (result.success) {
+  await writeFile("hypixel-icon.png", result.data.buffer);
+  console.log("Icon saved to hypixel-icon.png");
+} else {
+  console.error(`Failed to fetch icon: ${result.error}`);
+}
+
+// Use in Discord bot
+import { AttachmentBuilder } from "discord.js";
+
+const iconResult = await fetchServerIcon("mc.hypixel.net");
+
+if (iconResult.success) {
+  const attachment = new AttachmentBuilder(iconResult.data.buffer, {
+    name: "server-icon.png"
+  });
+  
+  await interaction.reply({
+    content: "Server Icon:",
+    files: [attachment]
+  });
+}
+```
+
+---
+
+## Type Definitions
+
+### ServerInfo
+
+Union type for online or offline server information.
+
+```typescript
+type ServerInfo = OnlineServerInfo | OfflineServerInfo;
+```
+
+### OnlineServerInfo
+
+Full server information when online.
+
+```typescript
+interface OnlineServerInfo {
+  online: true;
+  ip: string;
+  port: number;
+  hostname?: string;
+  debug: ServerDebugInfo;
+  version: string;
+  protocol?: {
+    version: number;
+    name?: string;
+  };
+  icon?: string;  // Base64-encoded PNG
+  software?: string;
+  map?: {
+    raw: string;
+    clean: string;
+    html: string;
+  };
+  gamemode?: string;
+  serverid?: string;
+  eula_blocked?: boolean;
+  motd: {
+    raw: string[];
+    clean: string[];
+    html: string[];
+  };
+  players: {
+    online: number;
+    max: number;
+    list?: Array<{
+      name: string;
+      uuid: string;
+    }>;
+  };
+  plugins?: Array<{
+    name: string;
+    version: string;
+  }>;
+  mods?: Array<{
+    name: string;
+    version: string;
+  }>;
+  info?: {
+    raw: string[];
+    clean: string[];
+    html: string[];
+  };
+}
+```
+
+### OfflineServerInfo
+
+Limited information when server is offline.
+
+```typescript
+interface OfflineServerInfo {
+  online: false;
+  ip: string;
+  port: number;
+  hostname?: string;
+  debug: ServerDebugInfo & {
+    error: {
+      ping: string;
+      query: string;
+    };
+  };
+}
+```
+
+### ServerDebugInfo
+
+Debugging information about the query.
+
+```typescript
+interface ServerDebugInfo {
+  ping: boolean;        // Ping successful
+  query: boolean;       // Query successful
+  bedrock: boolean;     // Is Bedrock server
+  srv: boolean;         // SRV record found
+  querymismatch: boolean;
+  ipinsrv: boolean;
+  cnameinsrv: boolean;
+  animatedmotd: boolean;
+  cachehit: boolean;    // Result from cache
+  cachetime: number;    // Cache timestamp
+  cacheexpire: number;  // Cache expiration
+  apiversion: number;   // API version
+}
+```
+
+---
+
+## Usage Notes
+
+### API Endpoint
+
+This module uses the MCServerStatus API:
+- Base URL: `https://api.mcsrvstat.us`
+- Status endpoint: `/3/{ip}` or `/bedrock/3/{ip}`
+- Simple check: `/simple/{ip}` or `/bedrock/simple/{ip}`
+- Icon endpoint: `/icon/{ip}`
+
+### Server Address Format
+
+You can specify servers with or without ports:
+
+```typescript
+// Default port (25565 for Java, 19132 for Bedrock)
+await fetchServerStatus("play.example.com");
+
+// Custom port
+await fetchServerStatus("play.example.com:25566");
+
+// IP address
+await fetchServerStatus("192.168.1.100:25565");
+```
+
+### Caching
+
+The MCServerStatus API caches results for a short period. Check `debug.cachehit`, `debug.cachetime`, and `debug.cacheexpire` to understand cache status:
+
+```typescript
+const status = await fetchServerStatus("mc.hypixel.net");
+
+if (status.online && status.debug.cachehit) {
+  const age = Date.now() - status.debug.cachetime;
+  console.log(`Data from cache (${Math.floor(age / 1000)}s old)`);
+}
+```
+
+### Query vs Ping
+
+The API attempts both ping and query:
+- **Ping**: Basic server information (always available)
+- **Query**: Extended information including player list, plugins (must be enabled on server)
+
+Check `debug.ping` and `debug.query` to see which succeeded:
+
+```typescript
+if (status.online) {
+  if (status.debug.query) {
+    console.log("Full query data available");
+    console.log(`Plugins: ${status.plugins?.length || 0}`);
+  } else {
+    console.log("Only ping data available");
+  }
+}
+```
+
+### Formatting MOTD
+
+MOTD is provided in three formats:
+
+```typescript
+const { motd } = status;
+
+// Raw with Minecraft color codes (§)
+console.log(motd.raw.join("\n"));
+
+// Plain text without formatting
+console.log(motd.clean.join(" "));
+
+// HTML with color styling
+document.getElementById("motd").innerHTML = motd.html.join("<br>");
+```

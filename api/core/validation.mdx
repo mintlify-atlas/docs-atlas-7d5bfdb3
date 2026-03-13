@@ -1,0 +1,170 @@
+---
+title: 'Validation Functions'
+description: 'Utilities for validating emails, URLs, numeric strings, and type checking'
+---
+
+## isEmail
+
+Validates if the given string is a valid email address.
+
+```typescript
+function isEmail(email: string): boolean
+```
+
+<ParamField path="email" type="string" required>
+  The email address to validate.
+</ParamField>
+
+<ResponseField name="result" type="boolean">
+  Returns `true` if the email is valid, otherwise `false`.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { isEmail } from "@magicyan/core";
+
+const validEmail = isEmail("example@domain.com");
+console.log(validEmail); // Output: true
+
+const invalidEmail = isEmail("example@domain");
+console.log(invalidEmail); // Output: false
+```
+
+---
+
+## isUrl
+
+Validates if the given string is a valid URL.
+
+```typescript
+function isUrl(url: string): boolean
+```
+
+<ParamField path="url" type="string" required>
+  The URL to validate.
+</ParamField>
+
+<ResponseField name="result" type="boolean">
+  Returns `true` if the URL is valid, otherwise `false`.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { isUrl } from "@magicyan/core";
+
+const validUrl = isUrl("https://example.com");
+console.log(validUrl); // Output: true
+
+const invalidUrl = isUrl("example.com");
+console.log(invalidUrl); // Output: false
+```
+
+---
+
+## isNumeric
+
+Checks if the given string is numeric (contains only digits).
+
+```typescript
+function isNumeric(text: string): boolean
+```
+
+<ParamField path="text" type="string" required>
+  The text to check.
+</ParamField>
+
+<ResponseField name="result" type="boolean">
+  Returns `true` if the text is numeric, otherwise `false`.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { isNumeric } from "@magicyan/core";
+
+const isNumericText = isNumeric("12345");
+console.log(isNumericText); // Output: true
+
+const isNotNumericText = isNumeric("123a45");
+console.log(isNotNumericText); // Output: false
+```
+
+---
+
+## isDefined
+
+Checks if a value is defined (not `null` or `undefined`). This function is a type guard that narrows the type.
+
+```typescript
+function isDefined<T>(value: T): value is (T & {})
+```
+
+<ParamField path="value" type="T" required>
+  The value to check.
+</ParamField>
+
+<ResponseField name="result" type="boolean">
+  Returns `true` if the value is not `null` or `undefined`, otherwise `false`. The return type is a type predicate.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { isDefined } from "@magicyan/core";
+
+const value1 = "hello";
+const value2 = null;
+const value3 = undefined;
+
+isDefined(value1); // Returns: true
+isDefined(value2); // Returns: false
+isDefined(value3); // Returns: false
+
+// Use as a type guard
+const items = [1, null, 2, undefined, 3];
+const definedItems = items.filter(isDefined);
+// Type: number[]
+// Value: [1, 2, 3]
+```
+
+---
+
+## isPromise
+
+Checks if a value is a Promise.
+
+```typescript
+function isPromise<T = unknown>(value: unknown): value is Promise<T>
+```
+
+<ParamField path="value" type="unknown" required>
+  The value to check.
+</ParamField>
+
+<ResponseField name="result" type="boolean">
+  Returns `true` if the value is a Promise, otherwise `false`. The return type is a type predicate.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { isPromise } from "@magicyan/core";
+
+const promise = Promise.resolve(42);
+const notPromise = { then: "not a function" };
+
+isPromise(promise); // Returns: true
+isPromise(notPromise); // Returns: false
+
+// Use as a type guard
+async function handleValue(value: unknown) {
+  if (isPromise(value)) {
+    const result = await value;
+    console.log(result);
+  } else {
+    console.log(value);
+  }
+}
+```

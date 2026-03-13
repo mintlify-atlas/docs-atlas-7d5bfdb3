@@ -1,0 +1,126 @@
+---
+title: Discord Events Overview
+description: Extended events for Discord.js that provide additional functionality beyond the standard Discord.js event system
+---
+
+## Overview
+
+The `@magicyan/discord-events` package extends Discord.js by providing additional events that give you more control and context when working with Discord bots. These extended events enhance the standard Discord.js events by including extra information like who executed an action, making it easier to build robust moderation and logging features.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/discord-events
+```
+
+```bash yarn
+yarn add @magicyan/discord-events
+```
+
+```bash pnpm
+pnpm add @magicyan/discord-events
+```
+</CodeGroup>
+
+## Quick Start
+
+To use the extended events, you need to initialize them with your Discord.js client:
+
+```typescript
+import { Client, GatewayIntentBits } from "discord.js";
+import { initDiscordEvents } from "@magicyan/discord-events";
+
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+});
+
+// Initialize extended events
+initDiscordEvents(client);
+
+client.login(process.env.BOT_TOKEN);
+```
+
+<Warning>
+  Make sure to enable the necessary intents for the events you want to use. Many extended events require `GuildModeration` intent to access audit logs.
+</Warning>
+
+## Required Intents
+
+Different extended events require different Gateway Intents:
+
+| Event Category | Required Intents |
+|----------------|------------------|
+| Role Events | `Guilds`, `GuildModeration` |
+| Channel Events | `Guilds`, `GuildModeration` |
+| Voice Events | `Guilds`, `GuildVoiceStates`, `GuildModeration` |
+| User Moderation Events | `Guilds`, `GuildMembers`, `GuildModeration` |
+| Webhook Events | `Guilds`, `GuildMessages`, `MessageContent` |
+
+## Available Event Categories
+
+The package provides extended events in the following categories:
+
+### Role Events
+- **extendedRoleCreate** - Triggered when a role is created, includes executor information
+- **extendedRoleDelete** - Triggered when a role is deleted, includes executor information
+- **extendedRoleUpdate** - Triggered when a role is updated, includes executor information
+
+### Channel Events
+- **extendedChannelDelete** - Triggered when a channel is deleted, includes executor information
+
+### Voice Events
+- **guildMemberConnect** - Triggered when a member joins a voice channel
+- **guildMemberDisconnect** - Triggered when a member leaves a voice channel
+- **guildMemberMoved** - Triggered when a member is moved between voice channels by another member
+
+### User Moderation Events
+- **userBanAdd** - Triggered when a user is banned, includes executor and reason
+- **userBanRemove** - Triggered when a user is unbanned, includes executor
+- **userKick** - Triggered when a user is kicked, includes executor and reason
+- **guildMemberTimeoutAdd** - Triggered when a member is timed out, includes executor and expiration
+- **guildMemberTimeoutRemove** - Triggered when a member's timeout is removed, includes executor
+
+### Message Events
+- **webhookMessageCreate** - Triggered when a message is created by a webhook, includes webhook information
+
+## How It Works
+
+The extended events work by:
+
+1. **Listening to base Discord.js events** - The package hooks into standard events like `guildAuditLogEntryCreate`, `roleDelete`, `channelDelete`, `voiceStateUpdate`, etc.
+
+2. **Fetching additional context** - When relevant events occur, the package fetches audit log entries to determine who executed the action
+
+3. **Emitting enhanced events** - New events are emitted with additional parameters like the executor member, making it easier to track who performed actions
+
+## TypeScript Support
+
+The package includes full TypeScript support with type definitions that extend Discord.js's `ClientEvents` interface. This means you get autocomplete and type checking when using the extended events:
+
+```typescript
+client.on("extendedRoleDelete", (role, executor) => {
+  // TypeScript knows the types:
+  // role: Role
+  // executor: GuildMember
+  console.log(`${executor.user.username} deleted role ${role.name}`);
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Extended Events Reference" icon="bolt" href="/discord-events/extended-events">
+    Explore all available extended events with detailed examples
+  </Card>
+  <Card title="Discord Package" icon="robot" href="/discord/overview">
+    Learn about the main Discord package utilities
+  </Card>
+</CardGroup>

@@ -1,0 +1,624 @@
+---
+title: Timer Management
+description: Create and manage intervals, timeouts, and loop intervals with clean stop functionality
+---
+
+## Overview
+
+The timers module provides enhanced wrappers around JavaScript's `setInterval` and `setTimeout` with additional features like immediate execution, stop callbacks, and array looping. These utilities make it easier to manage recurring tasks in Discord bots.
+
+## Functions
+
+### createInterval
+
+Creates an interval that executes a callback repeatedly with enhanced control features.
+
+```typescript
+function createInterval(options: CreateIntervalOptions): {
+  timer: NodeJS.Timeout;
+  stop: () => void;
+}
+```
+
+<ParamField path="options" type="CreateIntervalOptions" required>
+  Configuration object for the interval.
+</ParamField>
+
+<ParamField path="options.time" type="number" required>
+  The interval duration in milliseconds.
+</ParamField>
+
+<ParamField path="options.run" type="(stop: () => void) => void" required>
+  The callback function to execute at each interval. Receives a `stop` function to terminate the interval.
+</ParamField>
+
+<ParamField path="options.immediately" type="boolean" default="false">
+  If `true`, executes the callback immediately before starting the interval.
+</ParamField>
+
+**Returns:** Object with `timer` (the interval ID) and `stop` (function to clear the interval).
+
+#### Examples
+
+```typescript
+import { createInterval } from "@magicyan/core";
+
+// Basic interval
+const interval = createInterval({
+  time: 5000, // 5 seconds
+  run: (stop) => {
+    console.log("Executing every 5 seconds");
+  }
+});
+
+// Stop after 30 seconds
+setTimeout(() => interval.stop(), 30000);
+
+// Self-stopping interval
+let count = 0;
+const limitedInterval = createInterval({
+  time: 1000,
+  run: (stop) => {
+    count++;
+    console.log(`Count: ${count}`);
+    
+    if (count >= 10) {
+      console.log("Stopping after 10 iterations");
+      stop();
+    }
+  }
+});
+
+// Immediate execution
+const immediateInterval = createInterval({
+  time: 3000,
+  immediately: true, // Runs once immediately, then every 3 seconds
+  run: (stop) => {
+    console.log("This runs immediately, then every 3 seconds");
+  }
+});
+```
+
+#### Discord Bot Examples
+
+```typescript
+import { createInterval } from "@magicyan/core";
+import { Client } from "discord.js";
+
+// Status rotation
+function startStatusRotation(client: Client) {
+  const statuses = [
+    "Playing with code",
+    "Serving users",
+    "Watching the server"
+  ];
+  
+  let index = 0;
+  return createInterval({
+    time: 60000, // 1 minute
+    immediately: true,
+    run: (stop) => {
+      if (!client.isReady()) {
+        stop();
+        return;
+      }
+      
+      client.user.setActivity(statuses[index]);
+      index = (index + 1) % statuses.length;
+    }
+  });
+}
+
+// Auto-save system
+function startAutoSave(saveFunction: () => Promise<void>) {
+  return createInterval({
+    time: 300000, // 5 minutes
+    run: async (stop) => {
+      try {
+        await saveFunction();
+        console.log("Auto-save completed");
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+        stop(); // Stop on critical errors
+      }
+    }
+  });
+}
+
+// Temporary event reminders
+function startEventReminder(channelId: string, client: Client, endTime: Date) {
+  const channel = client.channels.cache.get(channelId);
+  if (!channel?.isTextBased()) return;
+  
+  return createInterval({
+    time: 600000, // 10 minutes
+    immediately: true,
+    run: (stop) => {
+      const now = Date.now();
+      if (now >= endTime.getTime()) {
+        channel.send("Event has ended!");
+        stop();
+        return;
+      }
+      
+      const remaining = Math.ceil((endTime.getTime() - now) / 60000);
+      channel.send(`Event reminder! ${remaining} minutes remaining.`);
+    }
+  });
+}
+```
+
+<Tip>
+  Use the `immediately` option when you want the first execution to happen right away instead of waiting for the first interval to complete.
+</Tip>
+
+---
+
+### createTimeout
+
+Creates a timeout with a clean API for cancellation.
+
+```typescript
+function createTimeout(options: CreateTimeoutOptions): {
+  timer: NodeJS.Timeout;
+  stop: () => void;
+}
+```
+
+<ParamField path="options" type="CreateTimeoutOptions" required>
+  Configuration object for the timeout.
+</ParamField>
+
+<ParamField path="options.delay" type="number" required>
+  The delay in milliseconds before executing the callback.
+</ParamField>
+
+<ParamField path="options.run" type="() => void" required>
+  The callback function to execute after the delay.
+</ParamField>
+
+**Returns:** Object with `timer` (the timeout ID) and `stop` (function to cancel the timeout).
+
+#### Examples
+
+```typescript
+import { createTimeout } from "@magicyan/core";
+
+// Basic timeout
+const timeout = createTimeout({
+  delay: 5000, // 5 seconds
+  run: () => {
+    console.log("Executed after 5 seconds");
+  }
+});
+
+// Cancellable timeout
+const cancellable = createTimeout({
+  delay: 10000,
+  run: () => {
+    console.log("This might not execute");
+  }
+});
+
+// Cancel after 3 seconds
+setTimeout(() => {
+  cancellable.stop();
+  console.log("Timeout cancelled");
+}, 3000);
+```
+
+#### Discord Use Cases
+
+```typescript
+import { createTimeout } from "@magicyan/core";
+import { Message } from "discord.js";
+
+// Auto-delete message
+async function sendTemporaryMessage(
+  message: Message,
+  content: string,
+  deleteAfter: number = 10000
+) {
+  const sent = await message.reply(content);
+  
+  createTimeout({
+    delay: deleteAfter,
+    run: async () => {
+      try {
+        await sent.delete();
+      } catch (error) {
+        console.error("Failed to delete message:", error);
+      }
+    }
+  });
+  
+  return sent;
+}
+
+// Delayed role assignment
+import { GuildMember } from "discord.js";
+
+function giveRoleAfterDelay(
+  member: GuildMember,
+  roleId: string,
+  delay: number
+) {
+  return createTimeout({
+    delay,
+    run: async () => {
+      try {
+        await member.roles.add(roleId);
+        console.log(`Assigned role to ${member.user.tag}`);
+      } catch (error) {
+        console.error("Failed to assign role:", error);
+      }
+    }
+  });
+}
+
+// Cooldown system
+const cooldowns = new Map<string, NodeJS.Timeout>();
+
+function setCooldown(userId: string, duration: number) {
+  // Clear existing cooldown if any
+  const existing = cooldowns.get(userId);
+  if (existing) clearTimeout(existing);
+  
+  const { timer } = createTimeout({
+    delay: duration,
+    run: () => {
+      cooldowns.delete(userId);
+      console.log(`Cooldown expired for ${userId}`);
+    }
+  });
+  
+  cooldowns.set(userId, timer);
+}
+
+function hasCooldown(userId: string): boolean {
+  return cooldowns.has(userId);
+}
+```
+
+<Note>
+  Unlike raw `setTimeout`, `createTimeout` returns a stop function that's easier to work with and more consistent with the other timer utilities.
+</Note>
+
+---
+
+### createLoopInterval
+
+Creates an interval that iterates through an array, executing a callback for each element.
+
+```typescript
+function createLoopInterval<T>(options: CreateLoopIntervalOptions<T>): {
+  timer: NodeJS.Timeout;
+  stop: () => void;
+}
+```
+
+<ParamField path="options" type="CreateLoopIntervalOptions<T>" required>
+  Configuration object for the loop interval.
+</ParamField>
+
+<ParamField path="options.array" type="T[]" required>
+  The array to iterate through.
+</ParamField>
+
+<ParamField path="options.time" type="number" required>
+  The interval duration in milliseconds between each iteration.
+</ParamField>
+
+<ParamField path="options.run" type="(value: T, stop: () => void, lap: number, array: T[]) => void" required>
+  Callback executed for each array element. Receives:
+  - `value`: Current array element
+  - `stop`: Function to stop the interval
+  - `lap`: How many times the array has been fully iterated (starts at 0)
+  - `array`: The full array being iterated
+</ParamField>
+
+<ParamField path="options.immediately" type="boolean" default="false">
+  If `true`, executes the first iteration immediately.
+</ParamField>
+
+**Returns:** Object with `timer` (the interval ID) and `stop` (function to clear the interval).
+
+#### Examples
+
+```typescript
+import { createLoopInterval } from "@magicyan/core";
+
+// Basic loop
+const colors = ["red", "green", "blue"];
+
+const loop = createLoopInterval({
+  array: colors,
+  time: 1000, // 1 second per color
+  run: (color, stop, lap) => {
+    console.log(`Lap ${lap}: ${color}`);
+    
+    // Stop after 2 complete laps
+    if (lap >= 2) stop();
+  }
+});
+
+// Output:
+// Lap 0: red
+// Lap 0: green
+// Lap 0: blue
+// Lap 1: red
+// Lap 1: green
+// Lap 1: blue
+// Lap 2: red (then stops)
+```
+
+#### Discord Bot Examples
+
+```typescript
+import { createLoopInterval } from "@magicyan/core";
+import { Client, ActivityType } from "discord.js";
+
+// Rotating bot status
+function setupStatusRotation(client: Client) {
+  const activities = [
+    { name: "with commands", type: ActivityType.Playing },
+    { name: "the server", type: ActivityType.Watching },
+    { name: "to users", type: ActivityType.Listening }
+  ];
+  
+  return createLoopInterval({
+    array: activities,
+    time: 30000, // 30 seconds per status
+    immediately: true,
+    run: (activity, stop) => {
+      if (!client.isReady()) {
+        stop();
+        return;
+      }
+      
+      client.user.setActivity(activity);
+    }
+  });
+}
+
+// Announcement system
+interface Announcement {
+  message: string;
+  channelId: string;
+}
+
+function startAnnouncementLoop(
+  client: Client,
+  announcements: Announcement[],
+  interval: number
+) {
+  return createLoopInterval({
+    array: announcements,
+    time: interval,
+    run: async (announcement, stop, lap, array) => {
+      const channel = client.channels.cache.get(announcement.channelId);
+      
+      if (!channel?.isTextBased()) {
+        console.warn(`Channel ${announcement.channelId} not found or not text-based`);
+        return;
+      }
+      
+      try {
+        await channel.send(`${announcement.message} (Round ${lap + 1})`);
+      } catch (error) {
+        console.error("Failed to send announcement:", error);
+      }
+    }
+  });
+}
+
+// Carousel embed system
+import { EmbedBuilder, Message } from "discord.js";
+
+interface CarouselPage {
+  title: string;
+  description: string;
+  color: number;
+}
+
+async function createCarousel(
+  message: Message,
+  pages: CarouselPage[],
+  duration: number = 5000
+) {
+  const sent = await message.channel.send({
+    embeds: [new EmbedBuilder(pages[0])]
+  });
+  
+  const carousel = createLoopInterval({
+    array: pages,
+    time: duration,
+    run: async (page, stop, lap) => {
+      try {
+        await sent.edit({
+          embeds: [new EmbedBuilder(page)]
+        });
+      } catch (error) {
+        console.error("Failed to update carousel:", error);
+        stop();
+      }
+    }
+  });
+  
+  // Auto-stop after 5 minutes
+  createTimeout({
+    delay: 300000,
+    run: () => carousel.stop()
+  });
+  
+  return { message: sent, interval: carousel };
+}
+```
+
+<Warning>
+  When the loop reaches the end of the array, it automatically restarts from the beginning and increments the `lap` counter. The loop continues indefinitely until `stop()` is called.
+</Warning>
+
+---
+
+## Common Patterns
+
+<AccordionGroup>
+  <Accordion title="Managed Timer Cleanup">
+    ```typescript
+    import { createInterval, createTimeout } from "@magicyan/core";
+
+    class TimerManager {
+      private timers = new Set<{ stop: () => void }>();
+      
+      createInterval(options: CreateIntervalOptions) {
+        const timer = createInterval(options);
+        this.timers.add(timer);
+        return timer;
+      }
+      
+      createTimeout(options: CreateTimeoutOptions) {
+        const timer = createTimeout(options);
+        this.timers.add(timer);
+        return timer;
+      }
+      
+      stopAll() {
+        for (const timer of this.timers) {
+          timer.stop();
+        }
+        this.timers.clear();
+      }
+    }
+
+    // Usage
+    const timers = new TimerManager();
+    
+    timers.createInterval({
+      time: 5000,
+      run: () => console.log("Task 1")
+    });
+    
+    timers.createInterval({
+      time: 10000,
+      run: () => console.log("Task 2")
+    });
+    
+    // Clean up all timers at once
+    process.on("SIGINT", () => {
+      timers.stopAll();
+      process.exit();
+    });
+    ```
+  </Accordion>
+  
+  <Accordion title="Conditional Intervals">
+    ```typescript
+    import { createInterval } from "@magicyan/core";
+
+    function createConditionalInterval(
+      condition: () => boolean,
+      options: CreateIntervalOptions
+    ) {
+      return createInterval({
+        ...options,
+        run: (stop) => {
+          if (!condition()) {
+            stop();
+            return;
+          }
+          options.run(stop);
+        }
+      });
+    }
+
+    // Usage: Only run while client is ready
+    const interval = createConditionalInterval(
+      () => client.isReady(),
+      {
+        time: 5000,
+        run: () => {
+          // This only executes while client is ready
+        }
+      }
+    );
+    ```
+  </Accordion>
+  
+  <Accordion title="Rate-Limited Actions">
+    ```typescript
+    import { createInterval } from "@magicyan/core";
+
+    class RateLimitedQueue<T> {
+      private queue: T[] = [];
+      private interval: ReturnType<typeof createInterval> | null = null;
+      
+      constructor(
+        private handler: (item: T) => void | Promise<void>,
+        private rateMs: number
+      ) {}
+      
+      enqueue(item: T) {
+        this.queue.push(item);
+        this.startProcessing();
+      }
+      
+      private startProcessing() {
+        if (this.interval) return; // Already processing
+        
+        this.interval = createInterval({
+          time: this.rateMs,
+          immediately: true,
+          run: async (stop) => {
+            const item = this.queue.shift();
+            
+            if (!item) {
+              stop();
+              this.interval = null;
+              return;
+            }
+            
+            try {
+              await this.handler(item);
+            } catch (error) {
+              console.error("Handler error:", error);
+            }
+          }
+        });
+      }
+    }
+
+    // Usage: Rate-limited message sending
+    const messageQueue = new RateLimitedQueue(
+      async (msg: string) => {
+        await channel.send(msg);
+      },
+      2000 // 2 seconds between messages
+    );
+
+    messageQueue.enqueue("Message 1");
+    messageQueue.enqueue("Message 2");
+    messageQueue.enqueue("Message 3");
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always Clean Up" icon="broom">
+    Store timer references and call `stop()` when shutting down to prevent memory leaks.
+  </Card>
+  
+  <Card title="Error Handling" icon="shield-exclamation">
+    Wrap async operations in try-catch blocks to prevent unhandled rejections.
+  </Card>
+  
+  <Card title="Conditional Stops" icon="hand">
+    Use the `stop` callback to terminate intervals based on runtime conditions.
+  </Card>
+  
+  <Card title="Use immediately" icon="bolt">
+    Set `immediately: true` when you want the first execution to happen right away.
+  </Card>
+</CardGroup>

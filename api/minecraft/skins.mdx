@@ -1,0 +1,403 @@
+---
+title: Skins API
+description: API reference for Minecraft skin rendering and information retrieval
+---
+
+The Skins API provides functions to render Minecraft player skins in various poses and retrieve skin information. It uses the Starlight Skins service.
+
+## Functions
+
+### skinRoute
+
+Generates a URL for rendering a Minecraft skin with specified parameters.
+
+```typescript
+function skinRoute<const T extends SkinRenderType>(
+    nickOrUUID: string,
+    type?: T,
+    crop?: SkinRenderTypeCrop[T],
+    options?: SkinRenderOptions
+): string
+```
+
+<ParamField path="nickOrUUID" type="string" required>
+  Player nickname or UUID
+</ParamField>
+
+<ParamField path="type" type="SkinRenderType" default="default">
+  The render type/pose. Available options:
+  - `default` - Standard standing pose
+  - `marching` - Marching pose
+  - `walking` - Walking animation
+  - `crouching` - Crouching pose
+  - `crossed` - Arms crossed
+  - `criss_cross` - Criss-cross pose
+  - `ultimate` - Ultimate pose
+  - `isometric` - Isometric view
+  - `head` - Head only
+  - `custom` - Custom pose
+  - `cheering` - Cheering pose
+  - `relaxing` - Relaxing pose
+  - `trudging` - Trudging pose
+  - `cowering` - Cowering pose
+  - `pointing` - Pointing pose
+  - `lunging` - Lunging pose
+  - `dungeons` - Dungeons style
+  - `facepalm` - Facepalm pose
+  - `sleeping` - Sleeping pose
+  - `dead` - Dead pose
+  - `archer` - Archer pose
+  - `kicking` - Kicking pose
+  - `mojavatar` - Mojavatar style
+  - `reading` - Reading pose
+  - `high_ground` - High ground pose
+  - `clown` - Clown pose
+  - `bitzel` - Bitzel style
+  - `pixel` - Pixel art style
+  - `ornament` - Ornament style
+  - `skin` - Raw skin texture
+  - `profile` - Profile view
+</ParamField>
+
+<ParamField path="crop" type="SkinRenderTypeCrop[T]">
+  Crop type for the render. Valid crops depend on the render type:
+  - Most 3D renders: `full`, `bust`, `face`
+  - `isometric`: `full`, `bust`, `face`, `head`
+  - `head`: `full`
+  - `skin`: `default`, `processed`, `barebones`
+  - `ornament`: `full`
+  - `sleeping`, `mojavatar`: `full`, `bust`
+</ParamField>
+
+<ParamField path="options" type="SkinRenderOptions">
+  Advanced rendering options including camera, lighting, and model settings
+</ParamField>
+
+<ResponseField name="return" type="string">
+  The generated URL for the skin render
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { skinRoute } from "@magicyan/minecraft";
+
+// Basic usage
+const url = skinRoute("Notch");
+
+// With custom pose and crop
+const customUrl = skinRoute("Notch", "cheering", "bust");
+
+// With advanced options
+const advancedUrl = skinRoute("Notch", "default", "full", {
+  camera: {
+    cameraWidth: 800,
+    cameraHeight: 800,
+    cameraFOV: 60
+  },
+  lighting: {
+    dirLightIntensity: 0.5,
+    globalLightIntensity: 0.3
+  },
+  model: {
+    capeEnabled: false
+  }
+});
+```
+
+---
+
+### fetchSkinRender
+
+Fetches a rendered Minecraft skin image as a buffer.
+
+```typescript
+async function fetchSkinRender<T extends SkinRenderType = "default">(
+    nickOrUUID: string,
+    type?: T,
+    crop?: SkinRenderTypeCrop[T],
+    options?: SkinRenderOptions
+): Promise<FetchSkinRenderResult>
+```
+
+<ParamField path="nickOrUUID" type="string" required>
+  Player nickname or UUID
+</ParamField>
+
+<ParamField path="type" type="SkinRenderType" default="default">
+  The render type/pose (see `skinRoute` for available options)
+</ParamField>
+
+<ParamField path="crop" type="SkinRenderTypeCrop[T]">
+  Crop type for the render
+</ParamField>
+
+<ParamField path="options" type="SkinRenderOptions">
+  Advanced rendering options
+</ParamField>
+
+<ResponseField name="success" type="boolean" required>
+  Whether the fetch was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Available when `success` is `true`:
+  
+  <ResponseField name="buffer" type="Buffer">
+    Image data as a Node.js Buffer
+  </ResponseField>
+  
+  <ResponseField name="arrayBuffer" type="ArrayBuffer">
+    Image data as an ArrayBuffer
+  </ResponseField>
+  
+  <ResponseField name="url" type="string">
+    Final URL of the fetched image
+  </ResponseField>
+  
+  <ResponseField name="response" type="Response">
+    Raw fetch Response object
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message when `success` is `false`
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code when `success` is `false`
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchSkinRender } from "@magicyan/minecraft";
+import { writeFile } from "fs/promises";
+
+// Fetch and save skin render
+const result = await fetchSkinRender("Notch", "isometric", "bust");
+
+if (result.success) {
+  await writeFile("notch-skin.png", result.data.buffer);
+  console.log("Saved to notch-skin.png");
+} else {
+  console.error(`Error ${result.code}: ${result.error}`);
+}
+```
+
+---
+
+### fetchSkinInfo
+
+Retrieves detailed information about a player's skin.
+
+```typescript
+async function fetchSkinInfo(
+    nickOrUIID: string
+): Promise<FetchSkinInfoResult>
+```
+
+<ParamField path="nickOrUIID" type="string" required>
+  Player nickname or UUID
+</ParamField>
+
+<ResponseField name="success" type="boolean" required>
+  Whether the fetch was successful
+</ResponseField>
+
+<ResponseField name="data" type="Partial<SkinInfo>">
+  Available when `success` is `true`:
+  
+  <ResponseField name="playerUUID" type="string">
+    UUID of the requested player
+  </ResponseField>
+  
+  <ResponseField name="skinUrl" type="string">
+    Direct link to the player's skin file
+  </ResponseField>
+  
+  <ResponseField name="userCape" type="string">
+    Link to the player's cape file (if available)
+  </ResponseField>
+  
+  <ResponseField name="processedSkinUrl" type="string">
+    Base64 copy of classic 32x32 skins converted to 64x64
+  </ResponseField>
+  
+  <ResponseField name="skinType" type="'slim' | 'wide'">
+    Geometry type of the player model
+  </ResponseField>
+  
+  <ResponseField name="skinTextureWidth" type="number">
+    Width of the skin texture in pixels
+  </ResponseField>
+  
+  <ResponseField name="skinTextureHeight" type="number">
+    Height of the skin texture in pixels
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message when `success` is `false`
+</ResponseField>
+
+<ResponseField name="code" type="number">
+  HTTP status code when `success` is `false`
+</ResponseField>
+
+**Example:**
+
+```typescript
+import { fetchSkinInfo } from "@magicyan/minecraft";
+
+const result = await fetchSkinInfo("Notch");
+
+if (result.success) {
+  console.log(`UUID: ${result.data.playerUUID}`);
+  console.log(`Skin Type: ${result.data.skinType}`);
+  console.log(`Skin URL: ${result.data.skinUrl}`);
+  console.log(`Dimensions: ${result.data.skinTextureWidth}x${result.data.skinTextureHeight}`);
+} else {
+  console.error(`Error: ${result.error}`);
+}
+```
+
+---
+
+## Type Definitions
+
+### SkinRenderOptions
+
+Advanced options for customizing skin renders.
+
+```typescript
+interface SkinRenderOptions {
+  camera?: Partial<SkinRenderCameraOptions>;
+  lighting?: Partial<SkinRenderLightingOptions>;
+  model?: Partial<SkinRenderModelOptions>;
+}
+```
+
+### SkinRenderCameraOptions
+
+Camera configuration for 3D renders.
+
+<ParamField path="cameraPosition" type="{ x: string | number, y: string | number, z: string | number }">
+  Camera position coordinates. Default varies by render type.
+</ParamField>
+
+<ParamField path="cameraFocalPoint" type="{ x: string | number, y: string | number, z: string | number }">
+  Camera focal point coordinates. Default varies by render type.
+</ParamField>
+
+<ParamField path="cameraWidth" type="number" default="1159">
+  Image width in pixels (max 3840). Disables auto-crop when defined.
+</ParamField>
+
+<ParamField path="cameraHeight" type="number" default="1159">
+  Image height in pixels (max 3840). Disables auto-crop when defined.
+</ParamField>
+
+<ParamField path="renderScale" type="number" default="1">
+  Scale factor for the render (3D only, must be > 0)
+</ParamField>
+
+<ParamField path="cameraFOV" type="number" default="75">
+  Field of view in degrees
+</ParamField>
+
+<ParamField path="isometric" type="boolean">
+  Use orthographic camera projection
+</ParamField>
+
+<ParamField path="borderHighlight" type="boolean" default="false">
+  Enable Dungeons-inspired white highlight border
+</ParamField>
+
+<ParamField path="borderHighlightColor" type="string" default="ffffff">
+  Hex color for the border highlight
+</ParamField>
+
+<ParamField path="borderHighlightRadius" type="number" default="3">
+  Size of the border highlight
+</ParamField>
+
+<ParamField path="dropShadow" type="boolean" default="false">
+  Enable simple drop shadow on the render
+</ParamField>
+
+### SkinRenderLightingOptions
+
+Lighting configuration for 3D renders.
+
+<ParamField path="dirLightPos" type="{ x: string | number, y: string | number, z: string | number }">
+  Directional light position. Default: `{ x: -10, y: 10, z: -10 }` (most renders)
+</ParamField>
+
+<ParamField path="dirLightColor" type="string" default="ffffff">
+  Hex color of the directional light
+</ParamField>
+
+<ParamField path="dirLightIntensity" type="number" default="0">
+  Directional light intensity adjustment
+</ParamField>
+
+<ParamField path="globalLightColor" type="string" default="ffffff">
+  Hex color of the global/ambient light
+</ParamField>
+
+<ParamField path="globalLightIntensity" type="number" default="0">
+  Global light intensity adjustment
+</ParamField>
+
+### SkinRenderModelOptions
+
+Model and texture configuration.
+
+<ParamField path="skinUrl" type="string">
+  Custom skin texture URL
+</ParamField>
+
+<ParamField path="skinType" type="'slim' | 'wide'" default="wide">
+  Model geometry type (must be used with `skinUrl`)
+</ParamField>
+
+<ParamField path="wideModel" type="string">
+  Custom wide model URL (for `custom` render type)
+</ParamField>
+
+<ParamField path="slimModel" type="string">
+  Custom slim model URL (for `custom` render type)
+</ParamField>
+
+<ParamField path="propModel" type="string">
+  OBJ model URL for a prop
+</ParamField>
+
+<ParamField path="propTexture" type="string">
+  Texture URL for the prop model
+</ParamField>
+
+<ParamField path="capeModel" type="string">
+  Custom OBJ cape model URL (for `custom` render type)
+</ParamField>
+
+<ParamField path="capeTexture" type="string">
+  Custom cape texture URL
+</ParamField>
+
+<ParamField path="capeEnabled" type="boolean" default="true">
+  Whether to render capes
+</ParamField>
+
+<ParamField path="propModelShading" type="boolean" default="true">
+  Enable shading for prop model (MeshLambertMaterial vs MeshBasicMaterial)
+</ParamField>
+
+<ParamField path="capeModelShading" type="boolean" default="true">
+  Enable shading for cape model
+</ParamField>
+
+<ParamField path="playerModelShading" type="boolean" default="true">
+  Enable shading for player model
+</ParamField>

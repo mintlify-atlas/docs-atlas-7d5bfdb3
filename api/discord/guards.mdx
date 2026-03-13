@@ -1,0 +1,406 @@
+---
+title: Guards
+description: Type guard functions for Discord.js types with runtime validation
+---
+
+Guard functions provide runtime type checking with TypeScript type narrowing. They allow you to safely determine if a value is of a specific Discord.js type.
+
+## isAttachment
+
+Check if a value is an `Attachment` or `AttachmentBuilder`.
+
+```typescript
+function isAttachment(
+  value: unknown
+): value is Attachment | AttachmentBuilder
+```
+
+<ParamField path="value" type="unknown" required>
+  The value to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the value is an `Attachment` or `AttachmentBuilder`, `false` otherwise
+</ResponseField>
+
+### Type Narrowing
+
+This function acts as a TypeScript type guard, narrowing the type in conditional blocks:
+
+```typescript
+import { isAttachment } from "@magicyan/discord";
+import type { Attachment, AttachmentBuilder } from "discord.js";
+
+function handleInput(input: Attachment | AttachmentBuilder | unknown) {
+  if (isAttachment(input)) {
+    // TypeScript knows input is Attachment | AttachmentBuilder
+    console.log("Attachment name:", input.name);
+    console.log("Attachment URL:", input.url);
+  } else {
+    console.log("Not an attachment");
+  }
+}
+```
+
+### Examples
+
+```typescript
+import { isAttachment } from "@magicyan/discord";
+import { AttachmentBuilder } from "discord.js";
+
+// Check message attachments
+const firstAttachment = message.attachments.first();
+if (isAttachment(firstAttachment)) {
+  console.log("File:", firstAttachment.name);
+}
+
+// Filter array for attachments
+const items: unknown[] = ["text", new AttachmentBuilder("file.png"), 123];
+const attachments = items.filter(isAttachment);
+// attachments is now typed as (Attachment | AttachmentBuilder)[]
+
+// Validate user input
+function processFile(file: unknown) {
+  if (!isAttachment(file)) {
+    throw new Error("Invalid file provided");
+  }
+  // file is now guaranteed to be Attachment | AttachmentBuilder
+  return file.name;
+}
+```
+
+---
+
+## isMessage
+
+Check if a value is a Discord `Message`.
+
+```typescript
+function isMessage(value: unknown): value is Message
+```
+
+<ParamField path="value" type="unknown" required>
+  The value to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the value is a `Message`, `false` otherwise
+</ResponseField>
+
+### Type Narrowing
+
+```typescript
+import { isMessage } from "@magicyan/discord";
+import type { Message, Interaction } from "discord.js";
+
+function handleEvent(event: Message | Interaction | unknown) {
+  if (isMessage(event)) {
+    // TypeScript knows event is Message
+    console.log("Message content:", event.content);
+    console.log("Author:", event.author.username);
+  }
+}
+```
+
+### Examples
+
+```typescript
+import { isMessage } from "@magicyan/discord";
+
+// Check interaction type
+if (isMessage(interaction.message)) {
+  await interaction.message.reply("Replying to the message");
+}
+
+// Validate webhook response
+const response = await webhook.send({ content: "Hello" });
+if (isMessage(response)) {
+  await response.edit("Updated!");
+}
+
+// Type-safe event handling
+client.on("messageCreate", (message) => {
+  if (isMessage(message)) {
+    // Guaranteed to be a Message
+    console.log("ID:", message.id);
+  }
+});
+```
+
+---
+
+## isButtonBuilder
+
+Check if a value is a `ButtonBuilder`.
+
+```typescript
+function isButtonBuilder(value: unknown): value is ButtonBuilder
+```
+
+<ParamField path="value" type="unknown" required>
+  The value to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the value is a `ButtonBuilder`, `false` otherwise
+</ResponseField>
+
+### Type Narrowing
+
+```typescript
+import { isButtonBuilder } from "@magicyan/discord";
+import type { ButtonBuilder, AnyComponentBuilder } from "discord.js";
+
+function handleComponent(component: AnyComponentBuilder | unknown) {
+  if (isButtonBuilder(component)) {
+    // TypeScript knows component is ButtonBuilder
+    component.setLabel("Click me!");
+    component.setDisabled(false);
+  }
+}
+```
+
+### Examples
+
+```typescript
+import { isButtonBuilder } from "@magicyan/discord";
+import { ButtonBuilder, StringSelectMenuBuilder } from "discord.js";
+
+// Filter components
+const components: AnyComponentBuilder[] = [
+  new ButtonBuilder(),
+  new StringSelectMenuBuilder()
+];
+
+const buttons = components.filter(isButtonBuilder);
+// buttons is now typed as ButtonBuilder[]
+
+// Validate component type
+function updateButton(component: unknown) {
+  if (!isButtonBuilder(component)) {
+    throw new Error("Expected a button");
+  }
+  component.setStyle(ButtonStyle.Success);
+}
+
+// Conditional logic
+if (isButtonBuilder(receivedComponent)) {
+  console.log("Custom ID:", receivedComponent.data.custom_id);
+}
+```
+
+---
+
+## isTextInputBuilder
+
+Check if a value is a `TextInputBuilder`.
+
+```typescript
+function isTextInputBuilder(value: unknown): value is TextInputBuilder
+```
+
+<ParamField path="value" type="unknown" required>
+  The value to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the value is a `TextInputBuilder`, `false` otherwise
+</ResponseField>
+
+### Type Narrowing
+
+```typescript
+import { isTextInputBuilder } from "@magicyan/discord";
+import type { TextInputBuilder } from "discord.js";
+
+function configureInput(input: TextInputBuilder | unknown) {
+  if (isTextInputBuilder(input)) {
+    // TypeScript knows input is TextInputBuilder
+    input.setRequired(true);
+    console.log("Input value:", input.data.value);
+  }
+}
+```
+
+### Examples
+
+```typescript
+import { isTextInputBuilder } from "@magicyan/discord";
+import { TextInputBuilder, TextInputStyle } from "discord.js";
+
+// Validate modal components
+function validateModalComponents(components: unknown[]) {
+  const textInputs = components.filter(isTextInputBuilder);
+  return textInputs.length > 0;
+}
+
+// Conditional setup
+if (isTextInputBuilder(component)) {
+  component.setStyle(TextInputStyle.Paragraph);
+  component.setMaxLength(1000);
+}
+
+// Type assertion
+const input = getComponent();
+if (!isTextInputBuilder(input)) {
+  throw new Error("Expected text input");
+}
+input.setPlaceholder("Enter text here");
+```
+
+---
+
+## Select Menu Guards
+
+Check if a value is a specific type of select menu builder.
+
+### isStringSelectMenuBuilder
+
+```typescript
+function isStringSelectMenuBuilder(
+  value: unknown
+): value is StringSelectMenuBuilder
+```
+
+### isUserSelectMenuBuilder
+
+```typescript
+function isUserSelectMenuBuilder(
+  value: unknown
+): value is UserSelectMenuBuilder
+```
+
+### isRoleSelectMenuBuilder
+
+```typescript
+function isRoleSelectMenuBuilder(
+  value: unknown
+): value is RoleSelectMenuBuilder
+```
+
+### isChannelSelectMenuBuilder
+
+```typescript
+function isChannelSelectMenuBuilder(
+  value: unknown
+): value is ChannelSelectMenuBuilder
+```
+
+### isMentionableSelectMenuBuilder
+
+```typescript
+function isMentionableSelectMenuBuilder(
+  value: unknown
+): value is MentionableSelectMenuBuilder
+```
+
+### isAnySelectMenuBuilder
+
+Check if a value is any type of select menu.
+
+```typescript
+function isAnySelectMenuBuilder(
+  value: unknown
+): value is AnySelectMenuBuilder
+```
+
+<ParamField path="value" type="unknown" required>
+  The value to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the value matches the specific select menu type, `false` otherwise
+</ResponseField>
+
+### Type Narrowing
+
+```typescript
+import {
+  isStringSelectMenuBuilder,
+  isUserSelectMenuBuilder,
+  isAnySelectMenuBuilder
+} from "@magicyan/discord";
+import type { AnyComponentBuilder } from "discord.js";
+
+function handleComponent(component: AnyComponentBuilder) {
+  if (isStringSelectMenuBuilder(component)) {
+    // component is StringSelectMenuBuilder
+    console.log("Options:", component.options.length);
+  } else if (isUserSelectMenuBuilder(component)) {
+    // component is UserSelectMenuBuilder
+    component.setMaxValues(5);
+  } else if (isAnySelectMenuBuilder(component)) {
+    // component is any select menu type
+    console.log("Custom ID:", component.data.custom_id);
+  }
+}
+```
+
+### Examples
+
+```typescript
+import {
+  isStringSelectMenuBuilder,
+  isRoleSelectMenuBuilder,
+  isAnySelectMenuBuilder
+} from "@magicyan/discord";
+import { StringSelectMenuBuilder, RoleSelectMenuBuilder } from "discord.js";
+
+// Filter specific select menu types
+const components: AnyComponentBuilder[] = [...];
+const stringMenus = components.filter(isStringSelectMenuBuilder);
+const roleMenus = components.filter(isRoleSelectMenuBuilder);
+
+// Generic select menu handling
+if (isAnySelectMenuBuilder(component)) {
+  component.setPlaceholder("Select an option");
+  component.setMinValues(1);
+}
+
+// Type-safe component updates
+function addOptions(menu: unknown) {
+  if (!isStringSelectMenuBuilder(menu)) {
+    return; // Not a string select menu
+  }
+  
+  menu.addOptions([
+    { label: "Option 1", value: "opt1" },
+    { label: "Option 2", value: "opt2" }
+  ]);
+}
+
+// Interaction handling
+if (interaction.isStringSelectMenu()) {
+  const component = interaction.component;
+  if (isStringSelectMenuBuilder(component)) {
+    // Work with the builder
+  }
+}
+```
+
+---
+
+## Best Practices
+
+<Card title="Type Safety" icon="shield-check">
+  Always use guard functions instead of unsafe type assertions when dealing with unknown or mixed types.
+</Card>
+
+<Card title="Array Filtering" icon="filter">
+  Guard functions work perfectly with `Array.filter()` for type-safe filtering:
+  ```typescript
+  const buttons = components.filter(isButtonBuilder);
+  ```
+</Card>
+
+<Card title="Early Returns" icon="arrow-right-from-bracket">
+  Use guards for early returns to reduce nesting:
+  ```typescript
+  if (!isMessage(value)) return;
+  // value is now guaranteed to be Message
+  ```
+</Card>
+
+<Card title="Cross-Module Safety" icon="layer-group">
+  Guards use constructor name checking for compatibility across module boundaries and different Discord.js versions.
+</Card>

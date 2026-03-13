@@ -1,0 +1,224 @@
+---
+title: 'Timer Functions'
+description: 'Enhanced interval and timeout utilities'
+---
+
+## createInterval
+
+Creates an interval timer with optional immediate execution and a stop callback.
+
+```typescript
+function createInterval(options: CreateIntervalOptions): {
+  timer: NodeJS.Timeout;
+  stop: () => void;
+}
+
+interface CreateIntervalOptions {
+  time: number;
+  immediately?: boolean;
+  run(stop: () => void): void;
+}
+```
+
+<ParamField path="options" type="CreateIntervalOptions" required>
+  Configuration object for the interval.
+  
+  <ParamField path="time" type="number" required>
+    The interval duration in milliseconds.
+  </ParamField>
+  
+  <ParamField path="immediately" type="boolean">
+    Whether to execute the callback immediately before starting the interval.
+  </ParamField>
+  
+  <ParamField path="run" type="(stop: () => void) => void" required>
+    The callback function to execute on each interval. Receives a `stop` function to clear the interval.
+  </ParamField>
+</ParamField>
+
+<ResponseField name="result" type="{ timer: NodeJS.Timeout; stop: () => void }">
+  An object containing the timer reference and a `stop` method to clear the interval.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createInterval } from "@magicyan/core";
+
+// Basic interval
+const { stop } = createInterval({
+  time: 1000,
+  run(stop) {
+    console.log("Running every second");
+  }
+});
+
+// Stop after 5 seconds
+setTimeout(stop, 5000);
+
+// Interval with immediate execution
+const interval = createInterval({
+  time: 2000,
+  immediately: true,
+  run(stop) {
+    console.log("Runs immediately, then every 2 seconds");
+  }
+});
+
+// Self-stopping interval
+let count = 0;
+createInterval({
+  time: 500,
+  run(stop) {
+    count++;
+    console.log(`Count: ${count}`);
+    if (count >= 5) stop();
+  }
+});
+```
+
+---
+
+## createTimeout
+
+Creates a timeout with a stop method.
+
+```typescript
+function createTimeout(options: CreateTimeoutOptions): {
+  timer: NodeJS.Timeout;
+  stop: () => void;
+}
+
+interface CreateTimeoutOptions {
+  delay: number;
+  run(): void;
+}
+```
+
+<ParamField path="options" type="CreateTimeoutOptions" required>
+  Configuration object for the timeout.
+  
+  <ParamField path="delay" type="number" required>
+    The delay in milliseconds before executing the callback.
+  </ParamField>
+  
+  <ParamField path="run" type="() => void" required>
+    The callback function to execute after the delay.
+  </ParamField>
+</ParamField>
+
+<ResponseField name="result" type="{ timer: NodeJS.Timeout; stop: () => void }">
+  An object containing the timer reference and a `stop` method to clear the timeout.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createTimeout } from "@magicyan/core";
+
+// Basic timeout
+const { stop } = createTimeout({
+  delay: 3000,
+  run() {
+    console.log("Executed after 3 seconds");
+  }
+});
+
+// Cancel the timeout before it executes
+stop();
+
+// Delayed action
+createTimeout({
+  delay: 1000,
+  run() {
+    console.log("This runs after 1 second");
+  }
+});
+```
+
+---
+
+## createLoopInterval
+
+Creates an interval that loops through an array, executing a callback for each element.
+
+```typescript
+function createLoopInterval<T>(options: CreateLoopIntervalOptions<T>): {
+  timer: NodeJS.Timeout;
+  stop: () => void;
+}
+
+interface CreateLoopIntervalOptions<T> {
+  array: T[];
+  time: number;
+  immediately?: boolean;
+  run(value: T, stop: () => void, lap: number, array: T[]): void;
+}
+```
+
+<ParamField path="options" type="CreateLoopIntervalOptions<T>" required>
+  Configuration object for the loop interval.
+  
+  <ParamField path="array" type="T[]" required>
+    The array to loop through.
+  </ParamField>
+  
+  <ParamField path="time" type="number" required>
+    The interval duration in milliseconds.
+  </ParamField>
+  
+  <ParamField path="immediately" type="boolean">
+    Whether to execute the first iteration immediately.
+  </ParamField>
+  
+  <ParamField path="run" type="(value: T, stop: () => void, lap: number, array: T[]) => void" required>
+    The callback function to execute for each element.
+    
+    - `value`: The current array element
+    - `stop`: Function to stop the interval
+    - `lap`: The current lap (cycle) number, starting from 0
+    - `array`: Reference to the original array
+  </ParamField>
+</ParamField>
+
+<ResponseField name="result" type="{ timer: NodeJS.Timeout; stop: () => void }">
+  An object containing the timer reference and a `stop` method to clear the interval.
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createLoopInterval } from "@magicyan/core";
+
+// Loop through an array
+const colors = ["red", "green", "blue"];
+
+const { stop } = createLoopInterval({
+  array: colors,
+  time: 1000,
+  run(color, stop, lap) {
+    console.log(`Lap ${lap}: ${color}`);
+    // Output:
+    // Lap 0: red
+    // Lap 0: green
+    // Lap 0: blue
+    // Lap 1: red
+    // Lap 1: green
+    // ...
+  }
+});
+
+// Stop after completing one full cycle
+const items = [1, 2, 3];
+createLoopInterval({
+  array: items,
+  time: 500,
+  immediately: true,
+  run(value, stop, lap, array) {
+    console.log(`Item: ${value}`);
+    if (lap === 1 && value === array[array.length - 1]) {
+      stop(); // Stop after second lap
+    }
+  }
+});
+```

@@ -1,0 +1,604 @@
+---
+title: Fonts
+description: Manage canvas font properties with a fluent, chainable API
+---
+
+# Canvas Fonts
+
+The `@magicyan/canvas` package provides the `CanvasContextFont` class for managing font properties on canvas contexts. It offers a clean, type-safe API for configuring text rendering with method chaining support.
+
+## Overview
+
+The `CanvasContextFont` class wraps the canvas 2D context and provides methods to set font family, size, style, weight, alignment, baseline, and kerning properties. All settings are applied immediately to the context.
+
+## Installation
+
+```bash
+npm install @magicyan/canvas @napi-rs/canvas
+```
+
+## Basic Usage
+
+```typescript
+import { createCanvas } from "@napi-rs/canvas";
+import { CanvasContextFont } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 600);
+const ctx = canvas.getContext("2d");
+
+// Create font manager with initial properties
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 24,
+  weight: "bold",
+  align: "center"
+});
+
+// Draw text
+ctx.fillStyle = "black";
+ctx.fillText("Hello World", 400, 300);
+```
+
+## Constructor
+
+```typescript
+new CanvasContextFont(
+  context: SKRSContext2D,
+  props?: Partial<CanvasContextFontProps>
+)
+```
+
+**Parameters:**
+- `context`: The canvas 2D context to manage
+- `props`: Optional initial font properties
+
+### CanvasContextFontProps Interface
+
+```typescript
+interface CanvasContextFontProps {
+  family?: string;                    // Font family name
+  style?: StrOr<ContextFontStyle>;    // Font style
+  weight?: StrOr<ContextFontWeight>;  // Font weight
+  size?: number;                      // Font size in pixels
+  align?: CanvasTextAlign;            // Text alignment
+  baseline?: CanvasTextBaseline;      // Text baseline
+  kerning?: CanvasFontKerning;        // Font kerning
+}
+```
+
+## Methods
+
+### set()
+
+Update multiple font properties at once:
+
+```typescript
+font.set(props: CanvasContextFontProps): this
+```
+
+**Example:**
+```typescript
+font.set({
+  family: "Helvetica",
+  size: 32,
+  weight: "bold",
+  align: "center"
+});
+```
+
+### Individual Setters
+
+All setters return `this` for method chaining:
+
+#### setFamily()
+
+```typescript
+font.setFamily(family: string): this
+```
+
+```typescript
+font.setFamily("Comic Sans MS");
+```
+
+#### setSize()
+
+```typescript
+font.setSize(size: number): this
+```
+
+```typescript
+font.setSize(48);
+```
+
+#### setStyle()
+
+```typescript
+font.setStyle(style: StrOr<ContextFontStyle>): this
+```
+
+```typescript
+font.setStyle("italic");
+font.setStyle("italic underline");
+```
+
+**Available styles:**
+- `"italic"`
+- `"italic underline"`
+- `"italic strikethrough"`
+- `"italic strikethrough underline"`
+- `"strikethrough"`
+- `"strikethrough underline"`
+- `"underline"`
+
+#### setWeight()
+
+```typescript
+font.setWeight(weight: StrOr<ContextFontWeight>): this
+```
+
+```typescript
+font.setWeight("bold");
+font.setWeight("600");
+```
+
+**Available weights:**
+- Named: `"thin"`, `"extralight"`, `"light"`, `"regular"`, `"medium"`, `"semibold"`, `"bold"`, `"extrabold"`, `"black"`
+- Numeric: `"100"`, `"200"`, `"300"`, `"400"`, `"500"`, `"600"`, `"700"`, `"800"`, `"900"`
+
+#### setAlign()
+
+```typescript
+font.setAlign(align: CanvasTextAlign): this
+```
+
+```typescript
+font.setAlign("center");
+```
+
+**Values:** `"start"`, `"end"`, `"left"`, `"right"`, `"center"`
+
+#### setBaseline()
+
+```typescript
+font.setBaseline(baseline: CanvasTextBaseline): this
+```
+
+```typescript
+font.setBaseline("middle");
+```
+
+**Values:** `"top"`, `"hanging"`, `"middle"`, `"alphabetic"`, `"ideographic"`, `"bottom"`
+
+#### setKerning()
+
+```typescript
+font.setKerning(kerning: CanvasFontKerning): this
+```
+
+```typescript
+font.setKerning("normal");
+```
+
+**Values:** `"auto"`, `"normal"`, `"none"`
+
+## Getters
+
+Access current font properties:
+
+```typescript
+font.family    // string
+font.style     // string | undefined
+font.weight    // string | undefined
+font.size      // number
+font.align     // CanvasTextAlign
+font.baseline  // CanvasTextBaseline
+font.kerning   // CanvasFontKerning
+```
+
+**Example:**
+```typescript
+console.log(`Current font: ${font.family} ${font.size}px`);
+if (font.weight) {
+  console.log(`Weight: ${font.weight}`);
+}
+```
+
+## Method Chaining
+
+All setter methods return `this`, enabling fluent method chaining:
+
+```typescript
+font
+  .setFamily("Arial")
+  .setSize(32)
+  .setWeight("bold")
+  .setAlign("center")
+  .setBaseline("middle");
+
+ctx.fillText("Chained Setup", 400, 300);
+```
+
+## Practical Examples
+
+### Discord Welcome Card Text
+
+```typescript
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { CanvasContextFont, Filter } from "@magicyan/canvas";
+
+const canvas = createCanvas(800, 400);
+const ctx = canvas.getContext("2d");
+
+// Background
+const bg = await loadImage("./background.jpg");
+ctx.drawImage(bg, 0, 0, 800, 400);
+
+// Welcome text
+const titleFont = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 56,
+  weight: "black",
+  align: "center",
+  baseline: "middle"
+});
+
+ctx.fillStyle = "white";
+ctx.strokeStyle = "black";
+ctx.lineWidth = 3;
+ctx.strokeText("WELCOME", 400, 100);
+ctx.fillText("WELCOME", 400, 100);
+
+// Username
+titleFont.setSize(40).setWeight("bold");
+ctx.fillText("John#1234", 400, 180);
+
+// Subtitle
+titleFont.setSize(24).setWeight("regular").setStyle("italic");
+ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+ctx.fillText("You are member #1,234", 400, 240);
+```
+
+### Rank Card
+
+```typescript
+const canvas = createCanvas(900, 300);
+const ctx = canvas.getContext("2d");
+
+// Background
+ctx.fillStyle = "#2c2f33";
+ctx.fillRect(0, 0, 900, 300);
+
+// Rank number (top left)
+const rankFont = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 32,
+  weight: "bold",
+  align: "left",
+  baseline: "top"
+});
+
+ctx.fillStyle = "#7289da";
+ctx.fillText("#12", 250, 60);
+
+// Username
+rankFont.setSize(40).setAlign("left");
+ctx.fillStyle = "white";
+ctx.fillText("Username", 250, 100);
+
+// Level and XP (smaller text)
+rankFont.setSize(20).setWeight("regular");
+ctx.fillStyle = "#99aab5";
+ctx.fillText("Level 25", 250, 155);
+
+// XP numbers (right aligned)
+rankFont.setAlign("right");
+ctx.fillText("1,234 / 5,000 XP", 850, 155);
+
+// Progress bar
+const progress = 1234 / 5000;
+ctx.fillStyle = "#4e5058";
+ctx.roundRect(250, 190, 600, 30, 15);
+ctx.fill();
+
+ctx.fillStyle = "#7289da";
+ctx.roundRect(250, 190, 600 * progress, 30, 15);
+ctx.fill();
+```
+
+### Multi-Line Text with Different Styles
+
+```typescript
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  align: "left",
+  baseline: "top"
+});
+
+const lines = [
+  { text: "Title", size: 48, weight: "bold", color: "#000" },
+  { text: "Subtitle", size: 32, weight: "semibold", color: "#333" },
+  { text: "Body text goes here", size: 20, weight: "regular", color: "#666" },
+  { text: "Footer note", size: 16, weight: "light", color: "#999" }
+];
+
+let y = 50;
+for (const line of lines) {
+  font.setSize(line.size).setWeight(line.weight);
+  ctx.fillStyle = line.color;
+  ctx.fillText(line.text, 50, y);
+  y += line.size + 10; // Add spacing
+}
+```
+
+### Centered Title with Shadow
+
+```typescript
+import { CanvasContextFont, Filter } from "@magicyan/canvas";
+
+const font = new CanvasContextFont(ctx, {
+  family: "Impact",
+  size: 72,
+  weight: "black",
+  align: "center",
+  baseline: "middle"
+});
+
+// Shadow
+ctx.filter = Filter.dropShadow(4, 4, 8, "rgba(0, 0, 0, 0.5)");
+ctx.fillStyle = "white";
+ctx.fillText("EPIC TITLE", canvas.width / 2, canvas.height / 2);
+ctx.filter = "none";
+```
+
+### Text with Gradient Fill
+
+```typescript
+import { CanvasContextFont, setGradientStops } from "@magicyan/canvas";
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 80,
+  weight: "black",
+  align: "center",
+  baseline: "middle"
+});
+
+// Create gradient
+const gradient = ctx.createLinearGradient(100, 0, 700, 0);
+setGradientStops(gradient, {
+  0: "#667eea",
+  1: "#764ba2"
+});
+
+ctx.fillStyle = gradient;
+ctx.fillText("GRADIENT", 400, 300);
+```
+
+### Responsive Font Sizing
+
+```typescript
+function drawResponsiveText(
+  ctx: SKRSContext2D,
+  text: string,
+  maxWidth: number,
+  baseSize: number
+) {
+  const font = new CanvasContextFont(ctx, {
+    family: "Arial",
+    size: baseSize,
+    weight: "bold",
+    align: "center"
+  });
+
+  let fontSize = baseSize;
+  font.setSize(fontSize);
+
+  // Reduce font size until text fits
+  while (ctx.measureText(text).width > maxWidth && fontSize > 10) {
+    fontSize -= 2;
+    font.setSize(fontSize);
+  }
+
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+}
+
+drawResponsiveText(ctx, "This text will fit!", 600, 48);
+```
+
+### Text Badges
+
+```typescript
+function drawBadge(
+  ctx: SKRSContext2D,
+  text: string,
+  x: number,
+  y: number,
+  color: string
+) {
+  const font = new CanvasContextFont(ctx, {
+    family: "Arial",
+    size: 14,
+    weight: "semibold",
+    align: "center",
+    baseline: "middle"
+  });
+
+  // Measure text
+  const metrics = ctx.measureText(text);
+  const padding = 8;
+  const width = metrics.width + padding * 2;
+  const height = 24;
+
+  // Background
+  ctx.fillStyle = color;
+  ctx.roundRect(x - width / 2, y - height / 2, width, height, 12);
+  ctx.fill();
+
+  // Text
+  ctx.fillStyle = "white";
+  ctx.fillText(text, x, y);
+}
+
+drawBadge(ctx, "NEW", 100, 50, "#7289da");
+drawBadge(ctx, "PRO", 200, 50, "#43b581");
+drawBadge(ctx, "ADMIN", 300, 50, "#f04747");
+```
+
+### Vertical Text Alignment
+
+```typescript
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  size: 24,
+  align: "center"
+});
+
+const baselines = ["top", "middle", "bottom"] as const;
+const x = canvas.width / 2;
+const y = canvas.height / 2;
+
+// Draw reference line
+ctx.strokeStyle = "red";
+ctx.beginPath();
+ctx.moveTo(0, y);
+ctx.lineTo(canvas.width, y);
+ctx.stroke();
+
+// Show different baselines
+let offsetX = 0;
+for (const baseline of baselines) {
+  font.setBaseline(baseline);
+  ctx.fillStyle = "black";
+  ctx.fillText(baseline, x + offsetX, y);
+  offsetX += 200;
+}
+```
+
+## Font Loading
+
+To use custom fonts with `@napi-rs/canvas`, register them before creating your font manager:
+
+```typescript
+import { GlobalFonts } from "@napi-rs/canvas";
+
+// Register custom font
+GlobalFonts.registerFromPath("./fonts/CustomFont-Bold.ttf", "CustomFont");
+
+// Use custom font
+const font = new CanvasContextFont(ctx, {
+  family: "CustomFont",
+  size: 32,
+  weight: "bold"
+});
+```
+
+## Best Practices
+
+### 1. Reuse Font Instances
+
+```typescript
+// Good: Reuse the same font manager
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  align: "center"
+});
+
+font.setSize(48);
+ctx.fillText("Title", 400, 100);
+
+font.setSize(24);
+ctx.fillText("Subtitle", 400, 150);
+
+// Less optimal: Create new instances
+const titleFont = new CanvasContextFont(ctx, { family: "Arial", size: 48 });
+const subtitleFont = new CanvasContextFont(ctx, { family: "Arial", size: 24 });
+```
+
+### 2. Set Common Properties in Constructor
+
+```typescript
+// Good: Set common properties once
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  align: "center",
+  baseline: "middle"
+});
+
+// Then only change what varies
+font.setSize(48).setWeight("bold");
+ctx.fillText("Title", 400, 200);
+
+font.setSize(24).setWeight("regular");
+ctx.fillText("Subtitle", 400, 250);
+```
+
+### 3. Use Method Chaining
+
+```typescript
+// Clean and readable
+font
+  .setSize(32)
+  .setWeight("bold")
+  .setAlign("center");
+
+ctx.fillText("Text", 400, 300);
+```
+
+### 4. Store Font Configurations
+
+```typescript
+const FONTS = {
+  title: { size: 48, weight: "black" as const },
+  subtitle: { size: 32, weight: "bold" as const },
+  body: { size: 20, weight: "regular" as const },
+  caption: { size: 14, weight: "light" as const }
+};
+
+const font = new CanvasContextFont(ctx, {
+  family: "Arial",
+  align: "center"
+});
+
+// Apply configurations
+font.set(FONTS.title);
+ctx.fillText("Title", 400, 100);
+
+font.set(FONTS.body);
+ctx.fillText("Body text", 400, 200);
+```
+
+## Type Definitions
+
+### ContextFontWeight
+
+```typescript
+type ContextFontWeight = 
+  | "thin" | "extralight" | "light" | "regular" 
+  | "medium" | "semibold" | "bold" | "extrabold" | "black"
+  | "100" | "200" | "300" | "400" | "500" 
+  | "600" | "700" | "800" | "900";
+```
+
+### ContextFontStyle
+
+```typescript
+type ContextFontStyle = 
+  | "italic" 
+  | "italic underline" 
+  | "italic strikethrough"
+  | "italic strikethrough underline"
+  | "strikethrough" 
+  | "strikethrough underline"
+  | "underline";
+```
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Gradients" icon="palette" href="/canvas/gradients">
+    Apply gradient fills to text
+  </Card>
+  <Card title="Filters" icon="wand-magic-sparkles" href="/canvas/filters">
+    Add shadows and effects to text
+  </Card>
+</CardGroup>

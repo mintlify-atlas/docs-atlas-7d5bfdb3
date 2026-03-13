@@ -1,0 +1,381 @@
+---
+title: 'Members'
+description: 'Find guild members by various identifiers'
+icon: 'users'
+---
+
+## Overview
+
+The members module provides utilities for finding guild members by username, nickname, display name, ID, or custom filters.
+
+## findMember
+
+Search for members in a guild with multiple search methods.
+
+### Signature
+
+```typescript
+function findMember(guild: Guild): {
+  byGlobalName(globalName: string, and?: (member: GuildMember) => boolean): GuildMember | undefined;
+  byNickname(nickname: string, and?: (member: GuildMember) => boolean): GuildMember | undefined;
+  byUsername(username: string, and?: (member: GuildMember) => boolean): GuildMember | undefined;
+  byDisplayName(displayName: string, and?: (member: GuildMember) => boolean): GuildMember | undefined;
+  byId(id: string): GuildMember | undefined;
+  byFilter(filter: (member: GuildMember) => boolean): GuildMember | undefined;
+}
+```
+
+### Basic Usage
+
+<Tabs>
+  <Tab title="Find by Display Name">
+    ```typescript
+    import { findMember } from '@magicyan/discord';
+import { Guild } from 'discord.js';
+
+    const guild: Guild = ...;
+
+    // Find by display name (nickname or username)
+    const member = findMember(guild).byDisplayName('JohnDoe');
+
+    if (member) {
+      console.log(`Found: ${member.user.tag}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by Username">
+    ```typescript
+    import { findMember } from '@magicyan/discord';
+
+    // Find by exact username
+    const member = findMember(guild).byUsername('john_doe_123');
+
+    if (member) {
+      await member.send('Hello!');
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by Nickname">
+    ```typescript
+    import { findMember } from '@magicyan/discord';
+
+    // Find by server nickname
+    const member = findMember(guild).byNickname('Admin John');
+
+    if (member) {
+      console.log(`Member ID: ${member.id}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by ID">
+    ```typescript
+    import { findMember } from '@magicyan/discord';
+
+    // Find by user ID
+    const member = findMember(guild).byId('1234567890');
+
+    if (member) {
+      console.log(`Member: ${member.displayName}`);
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Search with Filters
+
+All search methods (except `byId`) support an optional filter function:
+
+<CodeGroup>
+
+```typescript Role Filter
+import { findMember } from '@magicyan/discord';
+
+// Find member by username with role check
+const admin = findMember(guild).byUsername(
+  'john_doe',
+  member => member.roles.cache.some(role => role.name === 'Admin')
+);
+```
+
+```typescript Permission Filter
+import { findMember } from '@magicyan/discord';
+import { PermissionsBitField } from 'discord.js';
+
+// Find moderator by display name
+const moderator = findMember(guild).byDisplayName(
+  'ModJane',
+  member => member.permissions.has(PermissionsBitField.Flags.ModerateMembers)
+);
+```
+
+```typescript Status Filter
+import { findMember } from '@magicyan/discord';
+
+// Find online member by global name
+const onlineMember = findMember(guild).byGlobalName(
+  'Alice',
+  member => member.presence?.status === 'online'
+);
+```
+
+```typescript Custom Filter
+import { findMember } from '@magicyan/discord';
+
+// Find member with specific criteria
+const member = findMember(guild).byFilter(
+  m => m.user.bot === false && 
+       m.roles.cache.size > 3 &&
+       m.joinedTimestamp! < Date.now() - 30 * 24 * 60 * 60 * 1000
+);
+```
+
+</CodeGroup>
+
+## Understanding Display Names
+
+Discord has multiple types of names:
+
+```typescript
+import { findMember } from '@magicyan/discord';
+import { GuildMember } from 'discord.js';
+
+const member: GuildMember = ...;
+
+// username: The unique username (e.g., "john_doe")
+console.log(member.user.username);
+
+// globalName: The global display name (e.g., "John Doe")
+console.log(member.user.globalName);
+
+// nickname: Server-specific nickname (may be null)
+console.log(member.nickname);
+
+// displayName: Shows nickname if set, otherwise globalName or username
+console.log(member.displayName);
+```
+
+<Note>
+  Use `byDisplayName` when you want to match what users see in the member list. Use `byUsername` for exact account matching.
+</Note>
+
+## Real-World Examples
+
+### Member Lookup Command
+
+```typescript
+import { findMember, createEmbed } from '@magicyan/discord';
+import { ChatInputCommandInteraction, time } from 'discord.js';
+
+async function handleLookupCommand(interaction: ChatInputCommandInteraction) {
+  const query = interaction.options.getString('name', true);
+  
+  // Try multiple search methods
+  const member = 
+    findMember(interaction.guild!).byDisplayName(query) ??
+    findMember(interaction.guild!).byUsername(query) ??
+    findMember(interaction.guild!).byGlobalName(query);
+
+  if (!member) {
+    await interaction.reply('Member not found!');
+    return;
+  }
+
+  const embed = createEmbed({
+    title: `👤 ${member.displayName}`,
+    thumbnail: member.displayAvatarURL({ size: 256 }),
+    fields: [
+      { name: 'Username', value: member.user.username, inline: true },
+      { name: 'ID', value: member.id, inline: true },
+      { name: 'Joined', value: time(member.joinedAt!, 'R'), inline: true },
+      { name: 'Roles', value: member.roles.cache.map(r => r.name).join(', ') || 'None' }
+    ],
+    color: member.displayHexColor,
+    timestamp: true
+  });
+
+  await interaction.reply({ embeds: [embed] });
+}
+```
+
+### Find Moderators
+
+```typescript
+import { findMember } from '@magicyan/discord';
+import { Guild, PermissionsBitField } from 'discord.js';
+
+function findAllModerators(guild: Guild) {
+  const moderators: GuildMember[] = [];
+  
+  for (const [, member] of guild.members.cache) {
+    const hasModerationPerms = member.permissions.has(
+      PermissionsBitField.Flags.ModerateMembers
+    );
+    
+    if (hasModerationPerms && !member.user.bot) {
+      moderators.push(member);
+    }
+  }
+  
+  return moderators;
+}
+
+// Or use byFilter for a single moderator
+const onlineMod = findMember(guild).byFilter(
+  m => m.permissions.has(PermissionsBitField.Flags.ModerateMembers) &&
+       !m.user.bot &&
+       m.presence?.status === 'online'
+);
+```
+
+### Member Welcome System
+
+```typescript
+import { findMember, createEmbed } from '@magicyan/discord';
+import { Client, GuildMember } from 'discord.js';
+
+const client = new Client({ intents: [...] });
+
+client.on('guildMemberAdd', async (member: GuildMember) => {
+  // Find a similar username (potential alt account)
+  const similar = findMember(member.guild).byFilter(m => {
+    if (m.id === member.id) return false;
+    const similarity = calculateSimilarity(
+      m.user.username.toLowerCase(),
+      member.user.username.toLowerCase()
+    );
+    return similarity > 0.8;
+  });
+
+  if (similar) {
+    // Alert moderators about potential alt
+    const modChannel = member.guild.channels.cache.find(
+      ch => ch.name === 'mod-logs'
+    );
+    
+    if (modChannel?.isTextBased()) {
+      const embed = createEmbed({
+        title: '⚠️ Potential Alt Account',
+        description: `New member ${member} has a similar username to ${similar}`,
+        color: '#FFA500',
+        timestamp: true
+      });
+      
+      await modChannel.send({ embeds: [embed] });
+    }
+  }
+});
+
+function calculateSimilarity(str1: string, str2: string): number {
+  // Simple similarity check (you'd want a better algorithm)
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  const longerLength = longer.length;
+  
+  if (longerLength === 0) return 1.0;
+  
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longerLength - editDistance) / longerLength;
+}
+```
+
+### Role Assignment by Name
+
+```typescript
+import { findMember, findRole } from '@magicyan/discord';
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function handleAssignRoleCommand(interaction: ChatInputCommandInteraction) {
+  const memberName = interaction.options.getString('member', true);
+  const roleName = interaction.options.getString('role', true);
+  
+  const member = findMember(interaction.guild!).byDisplayName(memberName);
+  const role = findRole(interaction.guild!).byName(roleName);
+  
+  if (!member) {
+    await interaction.reply('Member not found!');
+    return;
+  }
+  
+  if (!role) {
+    await interaction.reply('Role not found!');
+    return;
+  }
+  
+  await member.roles.add(role);
+  await interaction.reply(`✅ Assigned ${role} to ${member}`);
+}
+```
+
+### Active Members Report
+
+```typescript
+import { findMember } from '@magicyan/discord';
+import { Guild } from 'discord.js';
+
+function getActiveMembersReport(guild: Guild) {
+  const now = Date.now();
+  const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+  
+  let activeCount = 0;
+  let onlineCount = 0;
+  let newMembers = 0;
+  
+  guild.members.cache.forEach(member => {
+    if (member.user.bot) return;
+    
+    // Count online members
+    if (member.presence?.status === 'online') {
+      onlineCount++;
+    }
+    
+    // Count new members (joined in last week)
+    if (member.joinedTimestamp && member.joinedTimestamp > oneWeekAgo) {
+      newMembers++;
+    }
+    
+    activeCount++;
+  });
+  
+  return {
+    total: guild.memberCount,
+    active: activeCount,
+    online: onlineCount,
+    new: newMembers,
+    bots: guild.members.cache.filter(m => m.user.bot).size
+  };
+}
+```
+
+## Best Practices
+
+<Warning>
+  The `findMember` function searches the member cache. For large guilds, ensure members are cached or use `guild.members.fetch()` first.
+</Warning>
+
+<Tip>
+  When searching by display name, remember that it prioritizes nicknames. If you need the original username, use `byUsername` instead.
+</Tip>
+
+<Note>
+  Always check if a member exists before performing actions on them to avoid runtime errors.
+</Note>
+
+## API Reference
+
+### findMember(guild)
+
+<ParamField path="guild" type="Guild" required>
+  The guild to search members in
+</ParamField>
+
+**Returns:** An object with search methods
+
+- `byGlobalName(name, and?)` - Find by global display name with optional filter
+- `byNickname(nickname, and?)` - Find by server nickname with optional filter
+- `byUsername(username, and?)` - Find by exact username with optional filter
+- `byDisplayName(displayName, and?)` - Find by displayed name (nickname or username) with optional filter
+- `byId(id)` - Find by user ID
+- `byFilter(filter)` - Find by custom filter function

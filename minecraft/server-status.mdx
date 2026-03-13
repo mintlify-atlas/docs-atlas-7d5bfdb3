@@ -1,0 +1,431 @@
+---
+title: 'Server Status'
+description: 'Query Minecraft server information and status'
+icon: 'server'
+---
+
+The server status module provides functions to check Minecraft server availability, fetch detailed server information, and retrieve server icons.
+
+## Functions
+
+### fetchServerStatus
+
+Fetch detailed status information about a Minecraft server.
+
+```typescript
+async function fetchServerStatus(
+  ip: string,
+  bedrock?: boolean
+): Promise<ServerInfo>
+```
+
+#### Parameters
+
+- `ip` - Server IP address or hostname (with optional port)
+- `bedrock` - Set to `true` for Bedrock servers (default: `false` for Java)
+
+#### Returns
+
+```typescript
+type ServerInfo = OnlineServerInfo | OfflineServerInfo;
+
+interface OnlineServerInfo {
+  online: true;
+  ip: string;
+  port: number;
+  hostname?: string;
+  version: string;
+  protocol?: {
+    version: number;
+    name?: string;
+  };
+  icon?: string;
+  software?: string;
+  motd: {
+    raw: string[];
+    clean: string[];
+    html: string[];
+  };
+  players: {
+    online: number;
+    max: number;
+    list?: Array<{
+      name: string;
+      uuid: string;
+    }>;
+  };
+  plugins?: Array<{
+    name: string;
+    version: string;
+  }>;
+  mods?: Array<{
+    name: string;
+    version: string;
+  }>;
+  debug: ServerDebugInfo;
+}
+
+interface OfflineServerInfo {
+  online: false;
+  ip: string;
+  port: number;
+  hostname?: string;
+  debug: ServerDebugInfo & {
+    error: {
+      ping: string;
+      query: string;
+    };
+  };
+}
+```
+
+#### Example
+
+```typescript
+import { fetchServerStatus } from '@magicyan/minecraft';
+
+// Java Edition server
+const status = await fetchServerStatus('mc.hypixel.net');
+
+if (status.online) {
+  console.log('Server Version:', status.version);
+  console.log('Players:', `${status.players.online}/${status.players.max}`);
+  console.log('MOTD:', status.motd.clean.join('\n'));
+  
+  // Check for player list (if query is enabled)
+  if (status.players.list) {
+    console.log('Online players:');
+    status.players.list.forEach(player => {
+      console.log(`- ${player.name} (${player.uuid})`);
+    });
+  }
+  
+  // Check for plugins
+  if (status.plugins) {
+    console.log('Plugins:', status.plugins.map(p => p.name).join(', '));
+  }
+} else {
+  console.log('Server is offline');
+  console.log('Error:', status.debug.error.ping);
+}
+
+// Bedrock Edition server
+const bedrockStatus = await fetchServerStatus('play.cubecraft.net', true);
+if (bedrockStatus.online) {
+  console.log('Bedrock server online!');
+}
+```
+
+### isServerOnline
+
+Quickly check if a server is online without fetching full details.
+
+```typescript
+async function isServerOnline(
+  ip: string,
+  bedrock?: boolean
+): Promise<boolean>
+```
+
+#### Parameters
+
+- `ip` - Server IP address or hostname
+- `bedrock` - Set to `true` for Bedrock servers (default: `false`)
+
+#### Returns
+
+`boolean` - `true` if server is online, `false` otherwise
+
+#### Example
+
+```typescript
+import { isServerOnline } from '@magicyan/minecraft';
+
+// Quick availability check
+const online = await isServerOnline('mc.hypixel.net');
+console.log('Hypixel is online:', online);
+
+// Check multiple servers
+const servers = [
+  'mc.hypixel.net',
+  'play.cubecraft.net',
+  'mineplex.com',
+];
+
+for (const server of servers) {
+  const status = await isServerOnline(server);
+  console.log(`${server}: ${status ? 'Online' : 'Offline'}`);
+}
+```
+
+### fetchServerIcon
+
+Fetch the server's icon/favicon as an image buffer.
+
+```typescript
+async function fetchServerIcon(
+  ip: string
+): Promise<FetchServerIconResult>
+```
+
+#### Parameters
+
+- `ip` - Server IP address or hostname
+
+#### Returns
+
+```typescript
+type FetchServerIconResult = FetchResult<{
+  buffer: Buffer;
+  url: string;
+  response: Response;
+}>;
+```
+
+#### Example
+
+```typescript
+import { fetchServerIcon } from '@magicyan/minecraft';
+import { writeFileSync } from 'fs';
+
+const result = await fetchServerIcon('mc.hypixel.net');
+
+if (result.success) {
+  // Save icon to file
+  writeFileSync('server-icon.png', result.data.buffer);
+  console.log('Icon saved!');
+} else {
+  console.error(`Failed to fetch icon: ${result.error}`);
+}
+```
+
+## Server IP Formats
+
+The functions accept various IP formats:
+
+```typescript
+// Hostname
+await fetchServerStatus('mc.hypixel.net');
+
+// IP address
+await fetchServerStatus('192.168.1.100');
+
+// With custom port
+await fetchServerStatus('play.example.com:25565');
+await fetchServerStatus('192.168.1.100:19132');
+```
+
+## Discord Bot Example
+
+Create a server status command:
+
+```typescript
+import { fetchServerStatus, fetchServerIcon } from '@magicyan/minecraft';
+import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
+
+async function createServerStatusEmbed(ip: string) {
+  const status = await fetchServerStatus(ip);
+  
+  if (!status.online) {
+    return new EmbedBuilder()
+      .setColor('Red')
+      .setTitle('Server Offline')
+      .setDescription(`**${ip}** is currently offline`);
+  }
+  
+  const embed = new EmbedBuilder()
+    .setColor('Green')
+    .setTitle(`Minecraft Server: ${ip}`)
+    .addFields(
+      { name: 'Version', value: status.version, inline: true },
+      {
+        name: 'Players',
+        value: `${status.players.online}/${status.players.max}`,
+        inline: true,
+      },
+      { name: 'MOTD', value: status.motd.clean.join('\n') || 'N/A' }
+    );
+  
+  if (status.software) {
+    embed.addFields({ name: 'Software', value: status.software, inline: true });
+  }
+  
+  // Add server icon if available
+  const iconResult = await fetchServerIcon(ip);
+  if (iconResult.success) {
+    const attachment = new AttachmentBuilder(iconResult.data.buffer, {
+      name: 'icon.png',
+    });
+    embed.setThumbnail('attachment://icon.png');
+    return { embed, attachment };
+  }
+  
+  return { embed };
+}
+
+// In your command handler
+const result = await createServerStatusEmbed('mc.hypixel.net');
+if (result.attachment) {
+  await interaction.reply({
+    embeds: [result.embed],
+    files: [result.attachment],
+  });
+} else {
+  await interaction.reply({ embeds: [result.embed] });
+}
+```
+
+## Server Monitoring
+
+Create a simple monitoring system:
+
+```typescript
+import { isServerOnline } from '@magicyan/minecraft';
+
+const servers = [
+  { name: 'Hypixel', ip: 'mc.hypixel.net' },
+  { name: 'Mineplex', ip: 'mineplex.com' },
+  { name: 'CubeCraft', ip: 'play.cubecraft.net' },
+];
+
+async function monitorServers() {
+  console.log('Checking server status...');
+  
+  for (const server of servers) {
+    const online = await isServerOnline(server.ip);
+    const status = online ? '✅' : '❌';
+    console.log(`${status} ${server.name} (${server.ip})`);
+  }
+}
+
+// Run every 5 minutes
+setInterval(monitorServers, 5 * 60 * 1000);
+monitorServers(); // Initial check
+```
+
+## Advanced Status Display
+
+Display detailed server information:
+
+```typescript
+import { fetchServerStatus } from '@magicyan/minecraft';
+
+async function displayDetailedStatus(ip: string) {
+  const status = await fetchServerStatus(ip);
+  
+  if (!status.online) {
+    console.log(`❌ ${ip} is offline`);
+    return;
+  }
+  
+  console.log(`✅ ${ip} is online\n`);
+  console.log(`Version: ${status.version}`);
+  console.log(`Players: ${status.players.online}/${status.players.max}`);
+  console.log(`\nMOTD:\n${status.motd.clean.join('\n')}`);
+  
+  if (status.players.list?.length) {
+    console.log(`\nOnline Players (${status.players.list.length}):`);
+    status.players.list.forEach(player => {
+      console.log(`  - ${player.name}`);
+    });
+  }
+  
+  if (status.plugins?.length) {
+    console.log(`\nPlugins (${status.plugins.length}):`);
+    status.plugins.forEach(plugin => {
+      console.log(`  - ${plugin.name} v${plugin.version}`);
+    });
+  }
+  
+  if (status.mods?.length) {
+    console.log(`\nMods (${status.mods.length}):`);
+    status.mods.forEach(mod => {
+      console.log(`  - ${mod.name} v${mod.version}`);
+    });
+  }
+  
+  console.log(`\nDebug Info:`);
+  console.log(`  Query: ${status.debug.query ? 'Enabled' : 'Disabled'}`);
+  console.log(`  SRV Record: ${status.debug.srv ? 'Yes' : 'No'}`);
+  console.log(`  Cache Hit: ${status.debug.cachehit ? 'Yes' : 'No'}`);
+}
+
+await displayDetailedStatus('mc.hypixel.net');
+```
+
+## MOTD Formatting
+
+The MOTD (Message of the Day) is available in three formats:
+
+```typescript
+const status = await fetchServerStatus('mc.hypixel.net');
+
+if (status.online) {
+  // Raw format (with color codes)
+  console.log('Raw:', status.motd.raw);
+  
+  // Clean format (without formatting)
+  console.log('Clean:', status.motd.clean);
+  
+  // HTML format (for web display)
+  console.log('HTML:', status.motd.html);
+}
+```
+
+## Debug Information
+
+```typescript
+interface ServerDebugInfo {
+  /** Ping was successful */
+  ping: boolean;
+  /** Query was successful */
+  query: boolean;
+  /** Server is Bedrock Edition */
+  bedrock: boolean;
+  /** SRV record found */
+  srv: boolean;
+  /** Query and ping player counts don't match */
+  querymismatch: boolean;
+  /** IP address found in SRV */
+  ipinsrv: boolean;
+  /** CNAME found in SRV */
+  cnameinsrv: boolean;
+  /** MOTD has animations */
+  animatedmotd: boolean;
+  /** Response was cached */
+  cachehit: boolean;
+  /** Cache timestamp */
+  cachetime: number;
+  /** Cache expiration time */
+  cacheexpire: number;
+  /** API version used */
+  apiversion: number;
+}
+```
+
+## API Source
+
+The server status API uses:
+
+```typescript
+RouteBases.mcsrvstat = 'https://api.mcsrvstat.us'
+```
+
+### Endpoints
+
+```
+# Java Edition status
+GET https://api.mcsrvstat.us/3/{ip}
+
+# Bedrock Edition status
+GET https://api.mcsrvstat.us/bedrock/3/{ip}
+
+# Quick online check (Java)
+GET https://api.mcsrvstat.us/simple/{ip}
+
+# Quick online check (Bedrock)
+GET https://api.mcsrvstat.us/bedrock/simple/{ip}
+
+# Server icon
+GET https://api.mcsrvstat.us/icon/{ip}
+```

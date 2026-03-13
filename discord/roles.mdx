@@ -1,0 +1,453 @@
+---
+title: 'Roles'
+description: 'Search guild roles by name, color, and filters'
+icon: 'shield'
+---
+
+## Overview
+
+The roles module provides utilities for finding guild roles by name, color, hex color, ID, or custom filters.
+
+## findRole
+
+Search for roles in a guild with multiple search methods.
+
+### Signature
+
+```typescript
+function findRole(guild: Guild): {
+  byColor(color: number, and?: (role: Role) => boolean): Role | undefined;
+  byHexColor(hexColor: string, and?: (role: Role) => boolean): Role | undefined;
+  byName(name: string, and?: (role: Role) => boolean): Role | undefined;
+  byId(id: string): Role | undefined;
+  byFilter(filter: (role: Role) => boolean): Role | undefined;
+}
+```
+
+### Basic Usage
+
+<Tabs>
+  <Tab title="Find by Name">
+    ```typescript
+    import { findRole } from '@magicyan/discord';
+    import { Guild } from 'discord.js';
+
+    const guild: Guild = ...;
+
+    // Find a role by name
+    const memberRole = findRole(guild).byName('Member');
+
+    if (memberRole) {
+      console.log(`Found role: ${memberRole.name}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by Hex Color">
+    ```typescript
+    import { findRole } from '@magicyan/discord';
+
+    // Find a role by hex color
+    const adminRole = findRole(guild).byHexColor('#ff5454');
+
+    if (adminRole) {
+      console.log(`Admin role: ${adminRole.name}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by Color">
+    ```typescript
+    import { findRole } from '@magicyan/discord';
+
+    // Find by numeric color value
+    const coloredRole = findRole(guild).byColor(16734296); // 0xFF5454
+
+    if (coloredRole) {
+      console.log(`Role: ${coloredRole.name}`);
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Find by ID">
+    ```typescript
+    import { findRole } from '@magicyan/discord';
+
+    // Find by role ID
+    const leaderRole = findRole(guild).byId('537818031728885771');
+
+    if (leaderRole) {
+      console.log(`Role: ${leaderRole.name}`);
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Search with Filters
+
+All search methods (except `byId`) support an optional filter function:
+
+<CodeGroup>
+
+```typescript Permission Filter
+import { findRole } from '@magicyan/discord';
+import { PermissionsBitField } from 'discord.js';
+
+// Find admin role by name with permission check
+const adminRole = findRole(guild).byName(
+  'Admin',
+  role => role.permissions.has(PermissionsBitField.Flags.Administrator)
+);
+```
+
+```typescript Position Filter
+import { findRole } from '@magicyan/discord';
+
+// Find high-ranking role by color
+const highRole = findRole(guild).byHexColor(
+  '#5865F2',
+  role => role.position > 5
+);
+```
+
+```typescript Mentionable Filter
+import { findRole } from '@magicyan/discord';
+
+// Find mentionable role
+const mentionableRole = findRole(guild).byName(
+  'Moderator',
+  role => role.mentionable
+);
+```
+
+```typescript Custom Filter
+import { findRole } from '@magicyan/discord';
+
+// Find role with complex criteria
+const specialRole = findRole(guild).byFilter(
+  role => role.color !== 0 && 
+          role.members.size > 10 &&
+          !role.managed
+);
+```
+
+</CodeGroup>
+
+## Real-World Examples
+
+### Role-Based Access Control
+
+```typescript
+import { findRole } from '@magicyan/discord';
+import { ChatInputCommandInteraction, PermissionsBitField } from 'discord.js';
+
+function hasRequiredRole(
+  interaction: ChatInputCommandInteraction,
+  roleName: string
+): boolean {
+  const member = interaction.member;
+  if (!member || !('roles' in member)) return false;
+  
+  const requiredRole = findRole(interaction.guild!).byName(roleName);
+  if (!requiredRole) return false;
+  
+  return member.roles.cache.has(requiredRole.id);
+}
+
+// Usage in command handler
+async function handleAdminCommand(interaction: ChatInputCommandInteraction) {
+  if (!hasRequiredRole(interaction, 'Admin')) {
+    await interaction.reply({
+      content: '❌ You need the Admin role to use this command!',
+      ephemeral: true
+    });
+    return;
+  }
+  
+  // Admin command logic here
+  await interaction.reply('Admin action completed!');
+}
+```
+
+### Auto-Role Assignment
+
+```typescript
+import { findRole } from '@magicyan/discord';
+import { Client, GuildMember } from 'discord.js';
+
+const client = new Client({ intents: [...] });
+
+client.on('guildMemberAdd', async (member: GuildMember) => {
+  // Assign default role to new members
+  const defaultRole = findRole(member.guild).byName('Member');
+  
+  if (defaultRole) {
+    await member.roles.add(defaultRole);
+    console.log(`Assigned ${defaultRole.name} to ${member.displayName}`);
+  }
+  
+  // Check if user has Nitro boost and assign booster role
+  if (member.premiumSince) {
+    const boosterRole = findRole(member.guild).byName('Server Booster');
+    if (boosterRole) {
+      await member.roles.add(boosterRole);
+    }
+  }
+});
+```
+
+### Role Information Command
+
+```typescript
+import { findRole, createEmbed } from '@magicyan/discord';
+import { ChatInputCommandInteraction, time } from 'discord.js';
+
+async function handleRoleInfoCommand(interaction: ChatInputCommandInteraction) {
+  const roleName = interaction.options.getString('role', true);
+  const role = findRole(interaction.guild!).byName(roleName);
+  
+  if (!role) {
+    await interaction.reply('Role not found!');
+    return;
+  }
+  
+  const embed = createEmbed({
+    title: `🛡️ ${role.name}`,
+    color: role.hexColor,
+    fields: [
+      { name: 'ID', value: role.id, inline: true },
+      { name: 'Color', value: role.hexColor, inline: true },
+      { name: 'Position', value: role.position.toString(), inline: true },
+      { name: 'Members', value: role.members.size.toString(), inline: true },
+      { name: 'Mentionable', value: role.mentionable ? 'Yes' : 'No', inline: true },
+      { name: 'Hoisted', value: role.hoist ? 'Yes' : 'No', inline: true },
+      { 
+        name: 'Created', 
+        value: time(role.createdAt, 'R'), 
+        inline: true 
+      },
+      {
+        name: 'Permissions',
+        value: role.permissions.toArray().slice(0, 10).join(', ') || 'None'
+      }
+    ],
+    timestamp: true
+  });
+  
+  await interaction.reply({ embeds: [embed] });
+}
+```
+
+### Role Color Palette
+
+```typescript
+import { findRole, createEmbed } from '@magicyan/discord';
+import { Guild } from 'discord.js';
+
+function getRoleColorPalette(guild: Guild) {
+  const coloredRoles = guild.roles.cache
+    .filter(role => role.color !== 0)
+    .sort((a, b) => b.position - a.position)
+    .first(10);
+  
+  const palette = coloredRoles.map(role => ({
+    name: role.name,
+    hexColor: role.hexColor,
+    position: role.position,
+    members: role.members.size
+  }));
+  
+  return palette;
+}
+
+// Create visual display
+async function displayRolePalette(guild: Guild, channelId: string) {
+  const palette = getRoleColorPalette(guild);
+  
+  const description = palette
+    .map(({ name, hexColor, members }) => 
+      `🎨 **${name}** \`${hexColor}\` - ${members} members`
+    )
+    .join('\n');
+  
+  const embed = createEmbed({
+    title: '🎨 Server Role Colors',
+    description,
+    timestamp: true
+  });
+  
+  const channel = guild.channels.cache.get(channelId);
+  if (channel?.isTextBased()) {
+    await channel.send({ embeds: [embed] });
+  }
+}
+```
+
+### Permission Audit
+
+```typescript
+import { findRole } from '@magicyan/discord';
+import { Guild, PermissionsBitField } from 'discord.js';
+
+function auditDangerousPermissions(guild: Guild) {
+  const dangerousPerms = [
+    PermissionsBitField.Flags.Administrator,
+    PermissionsBitField.Flags.ManageGuild,
+    PermissionsBitField.Flags.ManageRoles,
+    PermissionsBitField.Flags.ManageChannels,
+    PermissionsBitField.Flags.BanMembers,
+    PermissionsBitField.Flags.KickMembers
+  ];
+  
+  const report: Record<string, string[]> = {};
+  
+  guild.roles.cache.forEach(role => {
+    const hasDangerous = dangerousPerms.filter(perm => 
+      role.permissions.has(perm)
+    );
+    
+    if (hasDangerous.length > 0 && !role.managed) {
+      report[role.name] = hasDangerous.map(perm => 
+        new PermissionsBitField(perm).toArray()[0]
+      );
+    }
+  });
+  
+  return report;
+}
+
+// Usage
+const audit = auditDangerousPermissions(guild);
+console.log('Roles with dangerous permissions:', audit);
+```
+
+### Role Hierarchy Manager
+
+```typescript
+import { findRole } from '@magicyan/discord';
+import { ChatInputCommandInteraction } from 'discord.js';
+
+async function handleMoveRoleCommand(interaction: ChatInputCommandInteraction) {
+  const roleName = interaction.options.getString('role', true);
+  const newPosition = interaction.options.getInteger('position', true);
+  
+  const role = findRole(interaction.guild!).byName(roleName);
+  
+  if (!role) {
+    await interaction.reply('Role not found!');
+    return;
+  }
+  
+  // Check if bot can manage this role
+  const botMember = interaction.guild!.members.me!;
+  const botHighestRole = botMember.roles.highest;
+  
+  if (role.position >= botHighestRole.position) {
+    await interaction.reply(
+      '❌ I cannot manage this role as it is higher or equal to my highest role!'
+    );
+    return;
+  }
+  
+  await role.setPosition(newPosition);
+  await interaction.reply(`✅ Moved ${role.name} to position ${newPosition}`);
+}
+```
+
+### Role Reward System
+
+```typescript
+import { findRole } from '@magicyan/discord';
+import { GuildMember } from 'discord.js';
+
+interface RoleReward {
+  roleName: string;
+  requiredLevel: number;
+}
+
+const roleRewards: RoleReward[] = [
+  { roleName: 'Active Member', requiredLevel: 5 },
+  { roleName: 'Veteran', requiredLevel: 10 },
+  { roleName: 'Legend', requiredLevel: 20 }
+];
+
+async function updateMemberRoles(member: GuildMember, userLevel: number) {
+  for (const reward of roleRewards) {
+    const role = findRole(member.guild).byName(reward.roleName);
+    if (!role) continue;
+    
+    const hasRole = member.roles.cache.has(role.id);
+    const shouldHaveRole = userLevel >= reward.requiredLevel;
+    
+    if (shouldHaveRole && !hasRole) {
+      await member.roles.add(role);
+      console.log(`Granted ${role.name} to ${member.displayName}`);
+    } else if (!shouldHaveRole && hasRole) {
+      await member.roles.remove(role);
+      console.log(`Removed ${role.name} from ${member.displayName}`);
+    }
+  }
+}
+```
+
+## Best Practices
+
+<Warning>
+  The `findRole` function searches the role cache. Roles are typically always cached, but ensure the guild is available before searching.
+</Warning>
+
+<Tip>
+  When searching by color, use `byHexColor` for better readability. Use `byColor` when working with numeric color values from the API.
+</Tip>
+
+<Note>
+  Always verify role positions before attempting to assign or modify roles. A bot cannot manage roles higher than its own highest role.
+</Note>
+
+## Color Conversion
+
+Working with role colors:
+
+```typescript
+import { findRole } from '@magicyan/discord';
+
+const role = findRole(guild).byName('Admin');
+
+if (role) {
+  // Hex color (string)
+  console.log(role.hexColor); // '#5865F2'
+  
+  // Numeric color
+  console.log(role.color); // 5793266
+  
+  // Convert hex to number
+  const hexToNumber = parseInt(role.hexColor.slice(1), 16);
+  
+  // Convert number to hex
+  const numberToHex = `#${role.color.toString(16).padStart(6, '0')}`;
+}
+```
+
+## API Reference
+
+### findRole(guild)
+
+<ParamField path="guild" type="Guild" required>
+  The guild to search roles in
+</ParamField>
+
+**Returns:** An object with search methods
+
+- `byColor(color, and?)` - Find by numeric color value with optional filter
+- `byHexColor(hexColor, and?)` - Find by hex color string (e.g., '#FF5454') with optional filter
+- `byName(name, and?)` - Find by role name with optional filter
+- `byId(id)` - Find by role ID
+- `byFilter(filter)` - Find by custom filter function
+
+**Example:**
+
+```typescript
+const memberRole = findRole(guild).byName('Member');
+const adminRole = findRole(guild).byHexColor('#ff5454');
+const leaderRole = findRole(guild).byId('537818031728885771');
+```

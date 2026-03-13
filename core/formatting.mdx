@@ -1,0 +1,467 @@
+---
+title: String Formatting
+description: Build and manipulate strings with powerful formatting utilities
+---
+
+## Overview
+
+The formatting module provides a comprehensive set of string manipulation utilities including builders, text replacement, capitalization, and truncation. These functions help construct clean, formatted text for Discord messages and embeds.
+
+## String Builders
+
+### brBuilder
+
+Joins multiple strings or arrays of strings into a single string, separated by line breaks (`\n`). Automatically filters out `null` and `undefined` values.
+
+```typescript
+function brBuilder(...text: BuilderText[]): string
+```
+
+<ParamField path="text" type="BuilderText[]" required>
+  Variable number of text segments. Each can be a string, array of strings, or `null`/`undefined`.
+</ParamField>
+
+**Returns:** `string` - Concatenated string with line break separators.
+
+#### Examples
+
+```typescript
+import { brBuilder } from "@magicyan/core";
+
+const result = brBuilder(
+  "Hello",
+  [null, "World"],
+  undefined,
+  "!"
+);
+
+console.log(result);
+// Output:
+// Hello
+// World
+// !
+```
+
+#### Discord Usage
+
+```typescript
+import { EmbedBuilder } from "discord.js";
+import { brBuilder } from "@magicyan/core";
+
+const userInfo = {
+  name: "John",
+  level: 42,
+  guild: "Warriors"
+};
+
+const embed = new EmbedBuilder()
+  .setTitle("User Profile")
+  .setDescription(brBuilder(
+    `**Name:** ${userInfo.name}`,
+    `**Level:** ${userInfo.level}`,
+    userInfo.guild ? `**Guild:** ${userInfo.guild}` : null
+  ));
+```
+
+---
+
+### spaceBuilder
+
+Joins multiple strings or arrays of strings into a single string separated by spaces, ignoring `null` and `undefined` values.
+
+```typescript
+function spaceBuilder(...text: BuilderText[]): string
+```
+
+<ParamField path="text" type="BuilderText[]" required>
+  Variable number of text segments. Each can be a string, array of strings, or `null`/`undefined`.
+</ParamField>
+
+**Returns:** `string` - Concatenated string with space separators.
+
+#### Examples
+
+```typescript
+import { spaceBuilder } from "@magicyan/core";
+
+// Simple usage
+const greeting = spaceBuilder("Hello", "World");
+console.log(greeting); // "Hello World"
+
+// With arrays and nulls
+const sentence = spaceBuilder(["Hello", null], "World");
+console.log(sentence); // "Hello World"
+
+// Filtering undefined
+const filtered = spaceBuilder(null, undefined, "Only this");
+console.log(filtered); // "Only this"
+```
+
+#### Building Dynamic Messages
+
+```typescript
+import { spaceBuilder } from "@magicyan/core";
+
+function formatUserMention(userId: string, prefix?: string, suffix?: string) {
+  return spaceBuilder(
+    prefix,
+    `<@${userId}>`,
+    suffix
+  );
+}
+
+const mention1 = formatUserMention("123456789");
+// "<@123456789>"
+
+const mention2 = formatUserMention("123456789", "Welcome", "to the server!");
+// "Welcome <@123456789> to the server!"
+```
+
+---
+
+### joinBuilder
+
+A lower-level utility that joins strings with a custom separator. This is the foundation for `brBuilder` and `spaceBuilder`.
+
+```typescript
+function joinBuilder(separator: string, ...text: BuilderText[]): string
+```
+
+<ParamField path="separator" type="string" required>
+  The string used to join text segments.
+</ParamField>
+
+<ParamField path="text" type="BuilderText[]" required>
+  Variable number of text segments to join.
+</ParamField>
+
+#### Examples
+
+```typescript
+import { joinBuilder } from "@magicyan/core";
+
+// Comma-separated
+const csv = joinBuilder(", ", "apple", "banana", "orange");
+console.log(csv); // "apple, banana, orange"
+
+// Custom separator
+const path = joinBuilder(" > ", "Home", "Settings", "Profile");
+console.log(path); // "Home > Settings > Profile"
+```
+
+<Tip>
+  Use `brBuilder` and `spaceBuilder` for common cases, but `joinBuilder` gives you flexibility for custom separators like commas, pipes, or arrows.
+</Tip>
+
+---
+
+## Text Manipulation
+
+### capitalize
+
+Capitalizes the first letter of a word, or all words in a phrase if `allWords` is true.
+
+```typescript
+function capitalize(word: string, allWords?: boolean): string
+```
+
+<ParamField path="word" type="string" required>
+  The word or phrase to capitalize.
+</ParamField>
+
+<ParamField path="allWords" type="boolean" default="false">
+  If `true`, capitalizes the first letter of every word. If `false`, only the first letter of the entire string is capitalized.
+</ParamField>
+
+**Returns:** `string` - The capitalized text. Whitespace is automatically trimmed.
+
+#### Examples
+
+```typescript
+import { capitalize } from "@magicyan/core";
+
+// Single word
+const word = capitalize("hello");
+console.log(word); // "Hello"
+
+// Title case (all words)
+const title = capitalize("hello world", true);
+console.log(title); // "Hello World"
+
+// Handles whitespace
+const trimmed = capitalize("  whitespace  ");
+console.log(trimmed); // "Whitespace"
+```
+
+<Note>
+  The function converts all characters to lowercase first, then capitalizes as specified. This ensures consistent output regardless of input casing.
+</Note>
+
+---
+
+### limitText
+
+Truncates text to a specified length and optionally appends an ending string (like ellipsis).
+
+```typescript
+function limitText(text: string, maxLength: number, endText?: string): string
+```
+
+<ParamField path="text" type="string" required>
+  The text to potentially truncate.
+</ParamField>
+
+<ParamField path="maxLength" type="number" required>
+  The maximum allowed length before truncation.
+</ParamField>
+
+<ParamField path="endText" type="string" default="''">
+  A string to append at the end of the truncated text (e.g., `"..."`). This is added *after* truncation, so the final length will be `maxLength + endText.length`.
+</ParamField>
+
+**Returns:** `string` - The original text if within `maxLength`, otherwise the truncated text with `endText` appended.
+
+#### Examples
+
+```typescript
+import { limitText } from "@magicyan/core";
+
+// Basic truncation
+const short = limitText("Hello, this is a long sentence.", 10);
+console.log(short); // "Hello, thi"
+
+// With ellipsis
+const withDots = limitText("Hello, this is a long sentence.", 10, "...");
+console.log(withDots); // "Hello, thi..."
+
+// Text shorter than limit
+const unchanged = limitText("Short", 10);
+console.log(unchanged); // "Short"
+```
+
+#### Discord Field Limits
+
+```typescript
+import { EmbedBuilder } from "discord.js";
+import { limitText } from "@magicyan/core";
+
+const longDescription = "This is a very long description that exceeds Discord's embed limits...";
+
+const embed = new EmbedBuilder()
+  .setTitle("Info")
+  .setDescription(limitText(longDescription, 4096, "..."));
+
+// Field values are limited to 1024 characters
+embed.addFields({
+  name: "Details",
+  value: limitText(longDescription, 1024, "...")
+});
+```
+
+<Warning>
+  Discord has strict character limits: embed descriptions are limited to 4096 characters, field values to 1024, and field names to 256. Use `limitText` to prevent errors from exceeding these limits.
+</Warning>
+
+---
+
+### replaceText
+
+Replaces all occurrences of specified substrings in a text. Supports both string and function replacements.
+
+```typescript
+function replaceText(
+  text: string,
+  replacements: Record<string, string | ((text: string) => string)>
+): string
+```
+
+<ParamField path="text" type="string" required>
+  The text in which replacements will be made.
+</ParamField>
+
+<ParamField path="replacements" type="Record<string, string | Function>" required>
+  An object where keys are substrings to replace and values are either replacement strings or functions that return replacement strings.
+</ParamField>
+
+**Returns:** `string` - The text with all replacements applied.
+
+#### Examples
+
+```typescript
+import { replaceText } from "@magicyan/core";
+
+// String replacement
+const text1 = replaceText("Hello, {name}!", {
+  "{name}": "Alice"
+});
+console.log(text1); // "Hello, Alice!"
+
+// Function replacement
+const text2 = replaceText("Goodbye, {name}. See you later!", {
+  "{name}": (match) => match.toUpperCase()
+});
+console.log(text2); // "Goodbye, {NAME}. See you later!"
+
+// Multiple replacements
+const template = replaceText("Hello {user}, you have {count} messages", {
+  "{user}": "John",
+  "{count}": "5"
+});
+console.log(template); // "Hello John, you have 5 messages"
+```
+
+#### Template System
+
+```typescript
+import { replaceText } from "@magicyan/core";
+
+interface WelcomeData {
+  username: string;
+  serverName: string;
+  memberCount: number;
+}
+
+function createWelcomeMessage(data: WelcomeData): string {
+  const template = `Welcome {username} to {serverName}! You are member #{memberCount}.`;
+  
+  return replaceText(template, {
+    "{username}": data.username,
+    "{serverName}": data.serverName,
+    "{memberCount}": data.memberCount.toString()
+  });
+}
+
+const message = createWelcomeMessage({
+  username: "Alice",
+  serverName: "Epic Server",
+  memberCount: 1337
+});
+console.log(message);
+// "Welcome Alice to Epic Server! You are member #1337."
+```
+
+<Tip>
+  Longer replacement keys are processed first, preventing issues with overlapping patterns. Special regex characters in keys are automatically escaped.
+</Tip>
+
+---
+
+### notFound
+
+Converts `null` to `undefined`, leaving other values unchanged. Useful for handling API responses that use `null` for missing values.
+
+```typescript
+function notFound<T>(value: T): T & {} | undefined
+```
+
+<ParamField path="value" type="T" required>
+  The value to process.
+</ParamField>
+
+**Returns:** `T | undefined` - The original value if not `null`, otherwise `undefined`.
+
+#### Examples
+
+```typescript
+import { notFound } from "@magicyan/core";
+
+const value1 = notFound("Hello");
+console.log(value1); // "Hello"
+
+const value2 = notFound(null);
+console.log(value2); // undefined
+
+const value3 = notFound(42);
+console.log(value3); // 42
+```
+
+#### Optional Chaining
+
+```typescript
+import { notFound } from "@magicyan/core";
+
+interface User {
+  id: string;
+  nickname: string | null;
+}
+
+const user: User = { id: "123", nickname: null };
+
+// Convert null to undefined for optional chaining
+const displayName = notFound(user.nickname)?.toUpperCase() ?? "No nickname";
+console.log(displayName); // "No nickname"
+```
+
+## Type Definitions
+
+```typescript
+type BuilderText = Nullable<CanBeString> | BuilderText[];
+```
+
+Builder functions accept values that can be:
+- Strings
+- Objects with a `toString()` method
+- `null` or `undefined` (filtered out)
+- Nested arrays of the above
+
+## Common Patterns
+
+<AccordionGroup>
+  <Accordion title="Conditional Content in Embeds">
+    ```typescript
+    import { brBuilder } from "@magicyan/core";
+    import { EmbedBuilder } from "discord.js";
+
+    function createUserEmbed(user: any) {
+      return new EmbedBuilder()
+        .setTitle(user.name)
+        .setDescription(brBuilder(
+          `**ID:** ${user.id}`,
+          user.nickname ? `**Nickname:** ${user.nickname}` : null,
+          user.joinedAt ? `**Joined:** ${user.joinedAt}` : null,
+          user.roles.length > 0 ? `**Roles:** ${user.roles.join(", ")}` : null
+        ));
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Safe Text Truncation">
+    ```typescript
+    import { limitText } from "@magicyan/core";
+
+    function safeEmbedDescription(text: string): string {
+      return limitText(text, 4093, "..."); // 4096 - 3 for ellipsis
+    }
+
+    function safeFieldValue(text: string): string {
+      return limitText(text, 1021, "..."); // 1024 - 3 for ellipsis
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Dynamic Message Templates">
+    ```typescript
+    import { replaceText, capitalize } from "@magicyan/core";
+
+    const templates = {
+      levelUp: "Congratulations {user}! You reached level {level}!",
+      welcome: "Welcome {user} to {server}!",
+      goodbye: "Goodbye {user}, see you soon!"
+    };
+
+    function formatMessage(
+      template: keyof typeof templates,
+      data: Record<string, string>
+    ): string {
+      const text = templates[template];
+      const replacements: Record<string, string | Function> = {};
+      
+      for (const [key, value] of Object.entries(data)) {
+        replacements[`{${key}}`] = capitalize(value);
+      }
+      
+      return replaceText(text, replacements);
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

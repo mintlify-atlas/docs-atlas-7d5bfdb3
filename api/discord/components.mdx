@@ -1,0 +1,554 @@
+---
+title: Components
+description: API reference for Discord UI component creation functions
+---
+
+## createComponents
+
+Create and normalize multiple Discord UI components into builders.
+
+```typescript
+function createComponents<IsContainer extends boolean = false>(
+  ...data: (ComponentData | ComponentData[])[]
+): ContainerComponentBuilder[]
+```
+
+<ParamField path="data" type="ComponentData | ComponentData[]" required>
+  Component data to process. Can be:
+  - Component builders (buttons, select menus, etc.)
+  - Strings (converted to text display components)
+  - Attachments (converted to media galleries)
+  - `null`, `undefined`, or `boolean` (filtered out)
+</ParamField>
+
+<ResponseField name="return" type="ContainerComponentBuilder[]">
+  An array of normalized component builders
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createComponents } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const button = new ButtonBuilder({
+  customId: "click",
+  label: "Click Me",
+  style: ButtonStyle.Primary
+});
+
+// Mix different component types
+const components = createComponents(
+  button,
+  "This is text",
+  new AttachmentBuilder("./image.png")
+);
+
+await interaction.reply({
+  content: "Here are some components",
+  components
+});
+```
+
+---
+
+## createRow
+
+Create an action row containing UI components.
+
+```typescript
+function createRow<Component extends AnyComponentBuilder>(
+  ...components: (Component | Component[] | null | undefined | boolean)[]
+): ActionRowBuilder<Component>
+```
+
+<ParamField path="components" type="Component | Component[]" required>
+  Components to add to the row. Accepts:
+  - Individual component builders
+  - Arrays of component builders
+  - `null`, `undefined`, or `boolean` values (filtered out)
+</ParamField>
+
+<ResponseField name="return" type="ActionRowBuilder<Component>">
+  An action row builder containing the provided components
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createRow } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+// Create a row with buttons
+const row = createRow(
+  new ButtonBuilder({
+    customId: "accept",
+    label: "Accept",
+    style: ButtonStyle.Success
+  }),
+  new ButtonBuilder({
+    customId: "decline",
+    label: "Decline",
+    style: ButtonStyle.Danger
+  })
+);
+
+await interaction.reply({
+  content: "Do you accept?",
+  components: [row]
+});
+
+// With select menu
+const menuRow = createRow(
+  new StringSelectMenuBuilder({
+    customId: "choose",
+    placeholder: "Select an option",
+    options: [
+      { label: "Option 1", value: "opt1" },
+      { label: "Option 2", value: "opt2" }
+    ]
+  })
+);
+```
+
+---
+
+## createLinkButton
+
+Create a link button that opens a URL when clicked.
+
+```typescript
+function createLinkButton(
+  link: string,
+  label?: string,
+  emoji?: ComponentEmojiResolvable
+): ButtonBuilder
+
+function createLinkButton(data: CreateLinkButtonData): ButtonBuilder
+```
+
+<ParamField path="link" type="string" required>
+  The URL to open (overload 1)
+</ParamField>
+
+<ParamField path="label" type="string">
+  Button label text. Defaults to the URL (overload 1)
+</ParamField>
+
+<ParamField path="emoji" type="ComponentEmojiResolvable">
+  Optional emoji for the button (overload 1)
+</ParamField>
+
+<ParamField path="data" type="CreateLinkButtonData" required>
+  Link button data object (overload 2)
+</ParamField>
+
+<ResponseField name="return" type="ButtonBuilder">
+  A configured link button builder
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createLinkButton } from "@magicyan/discord";
+
+// Simple link button
+const button = createLinkButton("https://example.com", "Visit Website");
+
+// With emoji
+const emojiButton = createLinkButton(
+  "https://github.com",
+  "GitHub",
+  "💻"
+);
+
+// Using object syntax
+const button2 = createLinkButton({
+  url: "https://discord.com",
+  label: "Join Discord",
+  emoji: "🎮"
+});
+
+await interaction.reply({
+  content: "Check out these links!",
+  components: [createRow(button, emojiButton)]
+});
+```
+
+---
+
+## wrapButtons
+
+Wrap buttons into multiple action rows with a maximum number per row.
+
+```typescript
+function wrapButtons(
+  maxItemsPerRow: number,
+  ...buttons: (ButtonBuilder | ButtonBuilder[])[]
+): ActionRowBuilder<ButtonBuilder>[]
+```
+
+<ParamField path="maxItemsPerRow" type="number" required>
+  Maximum number of buttons to include in each row
+</ParamField>
+
+<ParamField path="buttons" type="ButtonBuilder | ButtonBuilder[]" required>
+  Buttons to wrap into rows
+</ParamField>
+
+<ResponseField name="return" type="ActionRowBuilder<ButtonBuilder>[]">
+  An array of action rows, each containing up to `maxItemsPerRow` buttons
+</ResponseField>
+
+### Examples
+
+```typescript
+import { wrapButtons } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+const buttons = [
+  new ButtonBuilder({ customId: "1", label: "1", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "2", label: "2", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "3", label: "3", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "4", label: "4", style: ButtonStyle.Primary }),
+  new ButtonBuilder({ customId: "5", label: "5", style: ButtonStyle.Primary })
+];
+
+// Wrap into rows of 2 buttons each
+const rows = wrapButtons(2, ...buttons);
+// Result: 3 rows with [button1, button2], [button3, button4], [button5]
+
+await interaction.reply({
+  content: "Select a number",
+  components: rows
+});
+
+// Dynamic button generation
+const numbers = Array.from({ length: 10 }, (_, i) => 
+  new ButtonBuilder({
+    customId: `num_${i}`,
+    label: `${i}`,
+    style: ButtonStyle.Secondary
+  })
+);
+
+const numberRows = wrapButtons(5, numbers);
+// Result: 2 rows with 5 buttons each
+```
+
+---
+
+## createTextInput
+
+Create a text input component for modals.
+
+```typescript
+function createTextInput(data: CreateInputData): TextInputBuilder
+```
+
+<ParamField path="data" type="CreateInputData" required>
+  Text input configuration:
+  - `customId`: Component identifier
+  - `placeholder`: Placeholder text
+  - `value`: Default value
+  - `minLength`: Minimum input length
+  - `maxLength`: Maximum input length
+  - `required`: Whether input is required
+  - `style`: Input style (defaults to `Short`)
+</ParamField>
+
+<ResponseField name="return" type="TextInputBuilder">
+  A configured text input builder
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createTextInput, createModal } from "@magicyan/discord";
+import { TextInputStyle } from "discord.js";
+
+// Short text input
+const nameInput = createTextInput({
+  customId: "name",
+  placeholder: "Enter your name",
+  required: true,
+  minLength: 2,
+  maxLength: 50
+});
+
+// Long text input (paragraph)
+const bioInput = createTextInput({
+  customId: "bio",
+  placeholder: "Tell us about yourself",
+  style: TextInputStyle.Paragraph,
+  maxLength: 1000
+});
+
+// Use in a modal
+const modal = createModal("profile", "Edit Profile",
+  createLabel("Name", nameInput),
+  createLabel("Bio", bioInput)
+);
+
+await interaction.showModal(modal);
+```
+
+---
+
+## createTextDisplay
+
+Create a text display component for containers.
+
+```typescript
+function createTextDisplay(
+  content: string,
+  id?: number
+): TextDisplayBuilder
+```
+
+<ParamField path="content" type="string" required>
+  The text content to display
+</ParamField>
+
+<ParamField path="id" type="number">
+  Optional numeric ID for the component
+</ParamField>
+
+<ResponseField name="return" type="TextDisplayBuilder">
+  A text display builder
+</ResponseField>
+
+### Example
+
+```typescript
+import { createTextDisplay } from "@magicyan/discord";
+
+const text = createTextDisplay("Hello World!");
+const textWithId = createTextDisplay("Welcome!", 123);
+```
+
+---
+
+## createSeparator
+
+Create a separator component with configurable visibility and spacing.
+
+```typescript
+function createSeparator(
+  large?: boolean,
+  divider?: boolean
+): SeparatorBuilder
+
+function createSeparator(data?: SeparatorData): SeparatorBuilder
+```
+
+<ParamField path="large" type="boolean">
+  Whether to use large spacing. Defaults to `false`
+</ParamField>
+
+<ParamField path="divider" type="boolean">
+  Whether the divider line is visible. Defaults to `true`
+</ParamField>
+
+<ParamField path="data" type="SeparatorData">
+  Separator configuration object
+</ParamField>
+
+<ResponseField name="return" type="SeparatorBuilder">
+  A separator builder
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createSeparator } from "@magicyan/discord";
+
+// Default: small spacing, visible divider
+const sep1 = createSeparator();
+
+// Large spacing with divider
+const sep2 = createSeparator(true, true);
+
+// Small spacing without divider
+const sep3 = createSeparator(false, false);
+
+// Using object syntax
+const sep4 = createSeparator({ large: true, divider: false });
+```
+
+---
+
+## createMediaGallery
+
+Create a media gallery component with images and attachments.
+
+```typescript
+function createMediaGallery(
+  ...items: (MediaGallerySource | MediaGallerySource[])[]
+): MediaGalleryBuilder
+```
+
+<ParamField path="items" type="MediaGallerySource | MediaGallerySource[]" required>
+  Media items to include. Can be:
+  - URL strings
+  - `Attachment` or `AttachmentBuilder` instances
+  - `MediaGalleryItemData` objects
+</ParamField>
+
+<ResponseField name="return" type="MediaGalleryBuilder">
+  A media gallery builder
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createMediaGallery } from "@magicyan/discord";
+import { AttachmentBuilder } from "discord.js";
+
+// With URLs
+const gallery = createMediaGallery(
+  "https://example.com/image1.png",
+  "https://example.com/image2.png"
+);
+
+// With attachments
+const gallery2 = createMediaGallery(
+  new AttachmentBuilder("./image1.png"),
+  new AttachmentBuilder("./image2.png")
+);
+
+// Mixed media types
+const gallery3 = createMediaGallery(
+  "https://example.com/image1.png",
+  new AttachmentBuilder("./image2.png")
+);
+```
+
+---
+
+## createSection
+
+Create a section component with text content and an optional accessory.
+
+```typescript
+function createSection(
+  content: string,
+  accessory: SectionAccessory
+): SectionBuilder
+
+function createSection(data: SectionData): SectionBuilder
+```
+
+<ParamField path="content" type="string | string[]" required>
+  The section's text content
+</ParamField>
+
+<ParamField path="accessory" type="SectionAccessory">
+  A button or thumbnail accessory
+</ParamField>
+
+<ParamField path="data" type="SectionData" required>
+  Section configuration object (overload 2)
+</ParamField>
+
+<ResponseField name="return" type="SectionBuilder">
+  A configured section builder
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createSection } from "@magicyan/discord";
+import { ButtonBuilder, ButtonStyle } from "discord.js";
+
+// Section with button accessory
+const section = createSection(
+  "Click the button to continue",
+  new ButtonBuilder({
+    customId: "next",
+    label: "Next",
+    style: ButtonStyle.Primary
+  })
+);
+
+// Section with thumbnail
+const section2 = createSection({
+  content: "Check out this image",
+  thumbnail: "https://example.com/image.png"
+});
+
+// Multiple text lines
+const section3 = createSection({
+  content: ["Line 1", "Line 2", "Line 3"],
+  button: new ButtonBuilder({
+    customId: "action",
+    label: "Action",
+    style: ButtonStyle.Success
+  })
+});
+```
+
+---
+
+## createLabel
+
+Create a label component for modals.
+
+```typescript
+function createLabel(data: CreateLabelData): LabelBuilder
+
+function createLabel(
+  label: string,
+  description?: string,
+  component?: CreateLabelData["component"],
+  id?: number
+): LabelBuilder
+
+function createLabel(
+  label: string,
+  component?: CreateLabelData["component"],
+  id?: number
+): LabelBuilder
+```
+
+<ParamField path="label" type="string" required>
+  The label text
+</ParamField>
+
+<ParamField path="description" type="string">
+  Optional description text
+</ParamField>
+
+<ParamField path="component" type="ComponentInLabelData">
+  Optional component within the label
+</ParamField>
+
+<ParamField path="id" type="number">
+  Optional numeric ID
+</ParamField>
+
+<ResponseField name="return" type="LabelBuilder">
+  A configured label builder
+</ResponseField>
+
+### Examples
+
+```typescript
+import { createLabel, createTextInput } from "@magicyan/discord";
+
+// Simple label
+const label = createLabel("Username");
+
+// Label with description
+const label2 = createLabel({
+  label: "Email",
+  description: "Enter your email address"
+});
+
+// Label with text input
+const label3 = createLabel(
+  "Name",
+  "Enter your full name",
+  createTextInput({ customId: "name" })
+);
+```

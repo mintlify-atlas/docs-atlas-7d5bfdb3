@@ -1,0 +1,604 @@
+---
+title: Filters API Reference
+description: Complete API reference for CSS-like visual effect filters
+---
+
+# Filters API Reference
+
+The `@magicyan/canvas` package provides a comprehensive set of filter functions that generate CSS filter strings for use with the `@napi-rs/canvas` context.
+
+## Filter Object
+
+The `Filter` object exports all filter functions as methods. Each method returns a CSS filter string that can be assigned to `ctx.filter`.
+
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Use Filter object methods
+ctx.filter = Filter.blur(5);
+ctx.filter = Filter.brightness(120);
+```
+
+All functions are also available as named exports:
+
+```typescript
+import { blur, brightness, contrast } from "@magicyan/canvas";
+
+ctx.filter = blur(5);
+```
+
+---
+
+## Filter Functions
+
+### blur()
+
+```typescript
+Filter.blur(amount: number): string
+```
+
+Applies a Gaussian blur effect to the element.
+
+<ParamField path="amount" type="number" required>
+  Blur radius in pixels. Higher values create more blur.
+  - Typical range: 0-20
+  - 0 = no blur
+  - Common values: 2-10 for subtle blur, 10-20 for heavy blur
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"blur(Xpx)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Subtle blur
+ctx.filter = Filter.blur(2);
+ctx.drawImage(background, 0, 0);
+
+// Heavy blur
+ctx.filter = Filter.blur(15);
+ctx.drawImage(background, 0, 0);
+
+// Reset
+ctx.filter = "none";
+```
+
+---
+
+### opacity()
+
+```typescript
+Filter.opacity(percentage: number): string
+```
+
+Adjusts the transparency of the element.
+
+<ParamField path="percentage" type="number" required>
+  Opacity level as a percentage (0-100):
+  - 0 = fully transparent (invisible)
+  - 50 = semi-transparent
+  - 100 = fully opaque (no transparency)
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"opacity(X%)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+// Semi-transparent
+ctx.filter = Filter.opacity(50);
+ctx.drawImage(overlay, 0, 0);
+
+// Almost invisible
+ctx.filter = Filter.opacity(10);
+ctx.drawImage(watermark, 0, 0);
+```
+
+---
+
+### brightness()
+
+```typescript
+Filter.brightness(percentage: number): string
+```
+
+Adjusts the brightness of the element.
+
+<ParamField path="percentage" type="number" required>
+  Brightness level as a percentage:
+  - Less than 100 = darker
+  - 100 = original brightness (no change)
+  - Greater than 100 = brighter
+  - Common range: 50-200
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"brightness(X%)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+// Darker image (70% brightness)
+ctx.filter = Filter.brightness(70);
+ctx.drawImage(image, 0, 0);
+
+// Brighter image (150% brightness)
+ctx.filter = Filter.brightness(150);
+ctx.drawImage(image, 0, 0);
+
+// Very dark (30% brightness)
+ctx.filter = Filter.brightness(30);
+ctx.drawImage(image, 0, 0);
+```
+
+---
+
+### contrast()
+
+```typescript
+Filter.contrast(percentage: number): string
+```
+
+Adjusts the contrast of the element.
+
+<ParamField path="percentage" type="number" required>
+  Contrast level as a percentage:
+  - Less than 100 = lower contrast
+  - 100 = original contrast (no change)
+  - Greater than 100 = higher contrast
+  - Common range: 50-200
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"contrast(X%)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+// Low contrast (washed out)
+ctx.filter = Filter.contrast(50);
+ctx.drawImage(image, 0, 0);
+
+// High contrast (more dramatic)
+ctx.filter = Filter.contrast(200);
+ctx.drawImage(image, 0, 0);
+```
+
+---
+
+### grayscale()
+
+```typescript
+Filter.grayscale(percentage: number): string
+```
+
+Converts the element to grayscale (removes color).
+
+<ParamField path="percentage" type="number" required>
+  Grayscale amount as a percentage (0-100):
+  - 0 = original colors (no effect)
+  - 50 = partially desaturated
+  - 100 = fully grayscale (black and white)
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"grayscale(X%)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+// Partial grayscale
+ctx.filter = Filter.grayscale(50);
+ctx.drawImage(image, 0, 0);
+
+// Full grayscale (black and white)
+ctx.filter = Filter.grayscale(100);
+ctx.drawImage(image, 0, 0);
+```
+
+---
+
+### sepia()
+
+```typescript
+Filter.sepia(percentage: number): string
+```
+
+Applies a sepia tone effect (warm, vintage brown tone).
+
+<ParamField path="percentage" type="number" required>
+  Sepia amount as a percentage (0-100):
+  - 0 = no effect (original colors)
+  - 50 = partial sepia tone
+  - 100 = full sepia effect
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"sepia(X%)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+// Vintage photo effect
+ctx.filter = Filter.sepia(80);
+ctx.drawImage(image, 0, 0);
+
+// Full sepia
+ctx.filter = Filter.sepia(100);
+ctx.drawImage(oldPhoto, 0, 0);
+```
+
+---
+
+### invert()
+
+```typescript
+Filter.invert(percentage: number): string
+```
+
+Inverts the colors of the element.
+
+<ParamField path="percentage" type="number" required>
+  Inversion amount as a percentage (0-100):
+  - 0 = original colors (no effect)
+  - 50 = partial inversion
+  - 100 = fully inverted colors (negative)
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"invert(X%)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+// Full color inversion (negative)
+ctx.filter = Filter.invert(100);
+ctx.drawImage(image, 0, 0);
+
+// Partial inversion
+ctx.filter = Filter.invert(50);
+ctx.drawImage(image, 0, 0);
+```
+
+---
+
+### hueRotate()
+
+```typescript
+Filter.hueRotate(deg: number): string
+```
+
+Rotates the hue of all colors in the element around the color wheel.
+
+<ParamField path="deg" type="number" required>
+  Rotation angle in degrees:
+  - 0 = no change
+  - 90 = shift colors by 90 degrees
+  - 180 = opposite colors
+  - 360 = full rotation (back to original)
+  - Can use negative values
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"hue-rotate(Xdeg)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+// Shift colors by 90 degrees
+ctx.filter = Filter.hueRotate(90);
+ctx.drawImage(image, 0, 0);
+
+// Opposite colors (180 degrees)
+ctx.filter = Filter.hueRotate(180);
+ctx.drawImage(image, 0, 0);
+
+// Full rotation (back to original)
+ctx.filter = Filter.hueRotate(360);
+ctx.drawImage(image, 0, 0);
+```
+
+---
+
+### dropShadow()
+
+```typescript
+Filter.dropShadow(
+  x: number,
+  y: number,
+  blur: number,
+  color?: StrOr<CssColors>
+): string
+```
+
+Applies a drop shadow effect behind the element.
+
+<ParamField path="x" type="number" required>
+  Horizontal shadow offset in pixels:
+  - Positive values = shadow to the right
+  - Negative values = shadow to the left
+  - 0 = no horizontal offset
+</ParamField>
+
+<ParamField path="y" type="number" required>
+  Vertical shadow offset in pixels:
+  - Positive values = shadow below
+  - Negative values = shadow above
+  - 0 = no vertical offset
+</ParamField>
+
+<ParamField path="blur" type="number" required>
+  Shadow blur radius in pixels:
+  - 0 = hard shadow edge
+  - Higher values = softer, more diffused shadow
+  - Common range: 2-10
+</ParamField>
+
+<ParamField path="color" type="StrOr<CssColors>" default="black">
+  Shadow color in any CSS color format:
+  - Named colors: `"black"`, `"red"`, `"navy"`, etc.
+  - Hex: `"#000000"`, `"#667eea"`, etc.
+  - RGB/RGBA: `"rgb(0, 0, 0)"`, `"rgba(0, 0, 0, 0.5)"`, etc.
+  - HSL: `"hsl(0, 0%, 0%)"`, etc.
+  
+  Defaults to `"black"` if not specified.
+</ParamField>
+
+<ResponseField name="returns" type="string">
+  CSS filter string in the format `"drop-shadow(Xpx Ypx Blurpx Color)"`.
+</ResponseField>
+
+**Example:**
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Basic shadow (right and down)
+ctx.filter = Filter.dropShadow(2, 2, 4, "black");
+ctx.drawImage(image, 100, 100);
+
+// Soft shadow with transparency
+ctx.filter = Filter.dropShadow(0, 4, 8, "rgba(0, 0, 0, 0.3)");
+ctx.drawImage(card, 50, 50);
+
+// Colored shadow
+ctx.filter = Filter.dropShadow(3, 3, 6, "#667eea");
+ctx.drawImage(icon, 200, 200);
+
+// Glow effect (no offset, large blur)
+ctx.filter = Filter.dropShadow(0, 0, 20, "rgba(102, 126, 234, 0.8)");
+ctx.drawImage(glowIcon, 300, 100);
+```
+
+---
+
+## Combining Filters
+
+Multiple filters can be combined by joining their strings with spaces. Filters are applied in the order they are specified.
+
+**Example:**
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+// Combine multiple effects
+ctx.filter = [
+  Filter.brightness(120),
+  Filter.contrast(110),
+  Filter.dropShadow(2, 2, 4, "black")
+].join(" ");
+
+ctx.drawImage(image, 0, 0);
+
+// Order matters - these produce different results
+ctx.filter = [Filter.blur(5), Filter.brightness(70)].join(" ");
+ctx.filter = [Filter.brightness(70), Filter.blur(5)].join(" ");
+```
+
+---
+
+## Named Exports
+
+All filter functions are also available as individual named exports:
+
+```typescript
+import {
+  blur,
+  opacity,
+  hueRotate,
+  sepia,
+  brightness,
+  contrast,
+  invert,
+  grayscale,
+  dropShadow
+} from "@magicyan/canvas";
+
+// Use directly
+ctx.filter = blur(5);
+ctx.filter = brightness(120);
+ctx.filter = dropShadow(2, 2, 4, "black");
+```
+
+---
+
+## Type Definitions
+
+### StrOr\<T\>
+
+```typescript
+type StrOr<Completions> = (string & {}) | Completions;
+```
+
+Utility type that provides autocomplete suggestions while still accepting any string value. Used for the `color` parameter in `dropShadow()`.
+
+---
+
+### CssColors
+
+```typescript
+type CssColors = 
+  | "black" | "silver" | "gray" | "white"
+  | "maroon" | "red" | "purple" | "fuchsia"
+  | "green" | "lime" | "olive" | "yellow"
+  | "navy" | "blue" | "teal" | "aqua"
+  // ... and many more CSS color names
+```
+
+Type definition providing autocomplete for all CSS named colors.
+
+---
+
+## Usage Examples
+
+### Blurred Background
+
+```typescript
+import { Filter } from "@magicyan/canvas";
+
+const background = await loadImage("./background.jpg");
+
+// Apply blur to background
+ctx.filter = Filter.blur(8);
+ctx.drawImage(background, 0, 0, 800, 400);
+ctx.filter = "none";
+
+// Draw content on top (not blurred)
+ctx.fillStyle = "white";
+ctx.fillText("Sharp Text", 400, 200);
+```
+
+### Disabled UI Element
+
+```typescript
+// Make element appear disabled
+ctx.filter = [
+  Filter.grayscale(100),
+  Filter.opacity(40),
+  Filter.brightness(110)
+].join(" ");
+
+ctx.drawImage(disabledButton, 0, 0);
+ctx.filter = "none";
+```
+
+### Vintage Photo Effect
+
+```typescript
+const filters = {
+  vintage: [Filter.sepia(80), Filter.contrast(90)].join(" "),
+  dramatic: [Filter.contrast(150), Filter.brightness(90)].join(" "),
+  dreamy: [Filter.blur(3), Filter.brightness(110), Filter.opacity(90)].join(" ")
+};
+
+ctx.filter = filters.vintage;
+ctx.drawImage(photo, 0, 0);
+```
+
+### Glow Effect
+
+```typescript
+const icon = await loadImage("./icon.png");
+
+// Outer glow layer
+ctx.filter = [
+  Filter.blur(20),
+  Filter.opacity(30),
+  Filter.brightness(120)
+].join(" ");
+ctx.drawImage(icon, 100, 100, 100, 100);
+
+// Middle glow layer
+ctx.filter = [Filter.blur(10), Filter.opacity(50)].join(" ");
+ctx.drawImage(icon, 100, 100, 100, 100);
+
+// Main icon (no filter)
+ctx.filter = "none";
+ctx.drawImage(icon, 100, 100, 100, 100);
+```
+
+### Card with Shadow
+
+```typescript
+import { Filter, setGradientStops } from "@magicyan/canvas";
+
+// Background with gradient
+const gradient = ctx.createLinearGradient(50, 50, 50, 250);
+setGradientStops(gradient, {
+  0: "#667eea",
+  1: "#764ba2"
+});
+
+ctx.fillStyle = gradient;
+
+// Apply shadow filter before drawing
+ctx.filter = Filter.dropShadow(0, 4, 12, "rgba(0, 0, 0, 0.3)");
+ctx.roundRect(50, 50, 700, 200, 20);
+ctx.fill();
+ctx.filter = "none";
+```
+
+---
+
+## Best Practices
+
+### Always Reset Filters
+
+Reset the filter to `"none"` after use to avoid affecting subsequent draw operations:
+
+```typescript
+ctx.filter = Filter.blur(10);
+ctx.drawImage(background, 0, 0);
+ctx.filter = "none"; // Important!
+
+ctx.drawImage(foreground, 0, 0); // Not blurred
+```
+
+### Minimize Filter Changes
+
+Group elements with the same filter to reduce context switches:
+
+```typescript
+// Good: Apply filter once
+ctx.filter = Filter.dropShadow(2, 2, 4, "black");
+ctx.drawImage(icon1, 0, 0);
+ctx.drawImage(icon2, 100, 0);
+ctx.drawImage(icon3, 200, 0);
+ctx.filter = "none";
+```
+
+### Use Constants for Common Filters
+
+Store frequently used filter combinations:
+
+```typescript
+const FILTERS = {
+  SUBTLE_SHADOW: Filter.dropShadow(0, 2, 4, "rgba(0, 0, 0, 0.2)"),
+  DISABLED: [Filter.grayscale(100), Filter.opacity(50)].join(" "),
+  VINTAGE: [Filter.sepia(80), Filter.contrast(90)].join(" ")
+};
+
+ctx.filter = FILTERS.SUBTLE_SHADOW;
+```
+
+### Consider Performance
+
+Filters can be computationally expensive, especially blur. For complex filters used repeatedly, consider pre-rendering to an off-screen canvas.
+
+---
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Filter Guide" icon="wand-magic-sparkles" href="/canvas/filters">
+    Complete guide with examples and best practices
+  </Card>
+  <Card title="Gradient API" icon="palette" href="/api/canvas/gradient">
+    Apply filters to gradient fills
+  </Card>
+  <Card title="Font API" icon="font" href="/api/canvas/font">
+    Apply filters to text rendering
+  </Card>
+</CardGroup>

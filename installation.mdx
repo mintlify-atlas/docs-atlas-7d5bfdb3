@@ -1,0 +1,197 @@
+---
+title: Installation
+description: Install Magicyan packages for your Discord bot project
+icon: download
+---
+
+Magicyan is a monorepo of TypeScript utility packages designed to simplify Discord bot development. Choose the packages you need based on your project requirements.
+
+## Core Packages
+
+### @magicyan/core
+
+Foundation package with general-purpose utility functions for TypeScript projects.
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/core
+```
+
+```bash yarn
+yarn add @magicyan/core
+```
+
+```bash pnpm
+pnpm install @magicyan/core
+```
+</CodeGroup>
+
+**Features:**
+- String manipulation (case-insensitive comparisons, text formatting)
+- Math utilities (random numbers, safe parsing)
+- Promise helpers (sleep, intervals)
+- Object utilities (deep copy, merge)
+- Validation (email, URL)
+
+### @magicyan/discord
+
+Main package for Discord bot development. Includes all @magicyan/core functions plus Discord.js utilities.
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/discord
+```
+
+```bash yarn
+yarn add @magicyan/discord
+```
+
+```bash pnpm
+pnpm install @magicyan/discord
+```
+</CodeGroup>
+
+**Features:**
+- Component builders (buttons, modals, embeds)
+- Channel and role finders
+- Member utilities
+- Message and URL parsers
+- Regex helpers for mentions
+
+<Note>
+  @magicyan/discord requires `discord.js` v14.25.1 or higher as a peer dependency.
+</Note>
+
+## Specialized Packages
+
+### @magicyan/discord-events
+
+Adds custom Discord.js event types for enhanced bot functionality.
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/discord-events
+```
+
+```bash yarn
+yarn add @magicyan/discord-events
+```
+
+```bash pnpm
+pnpm install @magicyan/discord-events
+```
+</CodeGroup>
+
+**Events included:**
+- Voice channel connection/disconnection
+- Webhook message creation
+- Member timeout and kick events
+- Extended role events with executor info
+
+### @magicyan/discord-ui
+
+Customizable UI components for Discord bots with built-in collectors.
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/discord-ui
+```
+
+```bash yarn
+yarn add @magicyan/discord-ui
+```
+
+```bash pnpm
+pnpm install @magicyan/discord-ui
+```
+</CodeGroup>
+
+**Components:**
+- Confirmation prompts
+- Pagination menus
+- Customizable button styles
+- Automatic timeout handling
+
+### @magicyan/canvas
+
+Enhanced canvas wrapper built on @napi-rs/canvas for image generation.
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/canvas
+```
+
+```bash yarn
+yarn add @magicyan/canvas
+```
+
+```bash pnpm
+pnpm install @magicyan/canvas
+```
+</CodeGroup>
+
+**Features:**
+- Simplified context styling
+- Filter system (blur, opacity, sepia)
+- Font management helpers
+- Gradient creation utilities
+
+### @magicyan/minecraft
+
+Minecraft integration utilities for player data, server status, and skin rendering.
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/minecraft
+```
+
+```bash yarn
+yarn add @magicyan/minecraft
+```
+
+```bash pnpm
+pnpm install @magicyan/minecraft
+```
+</CodeGroup>
+
+**Features:**
+- Player profile and skin fetching
+- 3D skin rendering (Starlight API)
+- Server status queries (Java & Bedrock)
+- Mojang API integration
+- Mush server statistics
+
+## Installing Multiple Packages
+
+You can install multiple packages at once:
+
+<CodeGroup>
+```bash npm
+npm install @magicyan/discord @magicyan/discord-events @magicyan/discord-ui
+```
+
+```bash yarn
+yarn add @magicyan/discord @magicyan/discord-events @magicyan/discord-ui
+```
+
+```bash pnpm
+pnpm install @magicyan/discord @magicyan/discord-events @magicyan/discord-ui
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Build your first bot with Magicyan
+  </Card>
+  <Card title="Core Package" icon="code" href="/core/overview">
+    Explore utility functions
+  </Card>
+  <Card title="Discord Package" icon="message" href="/discord/overview">
+    Learn Discord.js helpers
+  </Card>
+  <Card title="API Reference" icon="book" href="/api/core/check">
+    Browse complete API documentation
+  </Card>
+</CardGroup>

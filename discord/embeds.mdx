@@ -1,0 +1,559 @@
+---
+title: 'Embeds'
+description: 'Create rich embeds with enhanced features'
+icon: 'message'
+---
+
+## Overview
+
+The embeds module provides `EmbedPlusBuilder`, an enhanced version of Discord.js's `EmbedBuilder` with additional features, better type safety, and convenient utilities.
+
+## createEmbed
+
+Create embed instances with extended functionality.
+
+### Signature
+
+```typescript
+function createEmbed(options: {
+  title?: string | null;
+  color?: string | ColorResolvable | null;
+  description?: string | string[] | null;
+  url?: string | null;
+  thumbnail?: string | Attachment | EmbedAssetData;
+  image?: string | Attachment | EmbedAssetData;
+  fields?: Partial<EmbedFieldData>[];
+  timestamp?: string | number | Date | boolean;
+  footer?: string | { text?: string; iconURL?: string };
+  author?: { name: string; url?: string; iconURL?: string };
+  extends?: EmbedPlusData | EmbedData | EmbedBuilder;
+  mergeFields?: boolean;
+  array?: boolean;
+  from?: InteractionWithEmbeds | MessageWithEmbeds;
+  fromIndex?: number;
+}): EmbedPlusBuilder;
+```
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Simple Embed">
+    ```typescript
+    import { createEmbed } from '@magicyan/discord';
+
+    const embed = createEmbed({
+      title: 'Welcome!',
+      description: 'Thanks for joining our server.',
+      color: '#5865F2',
+      timestamp: true
+    });
+
+    await channel.send({ embeds: [embed] });
+    ```
+  </Tab>
+  
+  <Tab title="With Fields">
+    ```typescript
+    import { createEmbed } from '@magicyan/discord';
+
+    const embed = createEmbed({
+      title: 'Server Stats',
+      fields: [
+        { name: 'Members', value: '1,234', inline: true },
+        { name: 'Online', value: '567', inline: true },
+        { name: 'Channels', value: '42', inline: true }
+      ],
+      color: '#00FF00',
+      timestamp: true
+    });
+    ```
+  </Tab>
+  
+  <Tab title="With Images">
+    ```typescript
+    import { createEmbed } from '@magicyan/discord';
+
+    const embed = createEmbed({
+      title: 'Profile',
+      thumbnail: user.displayAvatarURL(),
+      image: 'https://example.com/banner.png',
+      description: 'User information',
+      color: member.displayHexColor
+    });
+    ```
+  </Tab>
+  
+  <Tab title="Array Description">
+    ```typescript
+    import { createEmbed } from '@magicyan/discord';
+
+    const embed = createEmbed({
+      title: 'Rules',
+      description: [
+        '1. Be respectful',
+        '2. No spam',
+        '3. Follow Discord TOS',
+        '',
+        'Breaking rules will result in warnings or bans.'
+      ],
+      color: '#FFA500'
+    });
+    // Array is automatically joined with line breaks
+    ```
+  </Tab>
+</Tabs>
+
+## EmbedPlusBuilder Features
+
+### Field Management
+
+Enhanced field manipulation:
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+
+const embed = createEmbed({
+  title: 'Dynamic Embed',
+  fields: [
+    { name: 'Field 1', value: 'Value 1' },
+    { name: 'Field 2', value: 'Value 2' }
+  ]
+});
+
+// Add fields
+embed.fields.push(
+  { name: 'Field 3', value: 'Value 3', inline: true }
+);
+
+// Get field by name or index
+const field = embed.fields.get('Field 1');
+const firstField = embed.fields.get(0);
+
+// Update field
+embed.fields.update('Field 1', { value: 'Updated!' });
+
+// Delete field
+embed.fields.delete('Field 2');
+
+// Clear all fields
+embed.fields.clear();
+
+// Get fields as record
+const record = embed.fields.record; // { 'Field 1': 'Value 1', ... }
+
+// Iterate over fields
+for (const field of embed.fields) {
+  console.log(field.name, field.value);
+}
+
+// Map fields
+const names = embed.fields.map(f => f.name);
+```
+
+### Update Method
+
+Update existing embed properties:
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+
+const embed = createEmbed({
+  title: 'Original Title',
+  description: 'Original description'
+});
+
+// Update properties (merges with existing)
+embed.update({
+  title: 'Updated Title',
+  color: '#FF0000',
+  timestamp: true
+});
+
+// Original fields are preserved when mergeFields is true
+embed.update({
+  fields: [{ name: 'New Field', value: 'New Value' }],
+  mergeFields: true
+});
+```
+
+### Extend Embeds
+
+Inherit properties from another embed:
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+
+const baseEmbed = createEmbed({
+  color: '#5865F2',
+  footer: { text: 'My Bot' },
+  timestamp: true
+});
+
+// Create new embed extending base
+const embed = createEmbed({
+  extends: baseEmbed,
+  title: 'Specific Title',
+  description: 'Specific content'
+});
+// Inherits color, footer, and timestamp from baseEmbed
+```
+
+### From Message/Interaction
+
+Create embeds from existing messages:
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+import { Message } from 'discord.js';
+
+const message: Message = ...;
+
+// Copy embed from message
+const embed = createEmbed({
+  from: message,
+  fromIndex: 0 // Use first embed
+});
+
+// Modify the copied embed
+embed.update({
+  title: 'Updated Title'
+});
+
+// Get all embeds as array
+const embeds = createEmbed({
+  from: message,
+  array: true
+});
+```
+
+## Helper Functions
+
+### createEmbedAuthor
+
+Generate embed author from users, members, or guilds:
+
+```typescript
+import { createEmbedAuthor, createEmbed } from '@magicyan/discord';
+import { GuildMember, User, Guild } from 'discord.js';
+
+const member: GuildMember = ...;
+
+// From member
+const embed = createEmbed({
+  title: 'Member Info',
+  author: createEmbedAuthor(member, {
+    property: 'displayName', // or 'username', 'globalName', 'nickname'
+    prefix: '👤 ',
+    url: 'https://example.com'
+  })
+});
+
+// From user
+const user: User = ...;
+const userAuthor = createEmbedAuthor(user, {
+  property: 'username'
+});
+
+// From guild
+const guild: Guild = ...;
+const guildAuthor = createEmbedAuthor(guild, {
+  property: 'name',
+  suffix: ' Server'
+});
+```
+
+### createEmbedFooter
+
+Create footer with text and optional icon:
+
+```typescript
+import { createEmbedFooter, createEmbed } from '@magicyan/discord';
+
+const embed = createEmbed({
+  title: 'Information',
+  footer: createEmbedFooter({
+    text: 'Requested by user',
+    iconURL: user.displayAvatarURL()
+  })
+});
+
+// Or use string directly
+const simpleEmbed = createEmbed({
+  title: 'Simple',
+  footer: 'Simple footer text'
+});
+```
+
+## Real-World Examples
+
+### User Profile Card
+
+```typescript
+import { createEmbed, createEmbedAuthor } from '@magicyan/discord';
+import { GuildMember, time } from 'discord.js';
+
+function createProfileEmbed(member: GuildMember) {
+  const roles = member.roles.cache
+    .filter(role => role.id !== member.guild.id)
+    .sort((a, b) => b.position - a.position)
+    .map(role => role.toString())
+    .slice(0, 10)
+    .join(', ');
+
+  return createEmbed({
+    author: createEmbedAuthor(member, {
+      prefix: '👤 '
+    }),
+    thumbnail: member.displayAvatarURL({ size: 256 }),
+    fields: [
+      {
+        name: 'User Information',
+        value: [
+          `**ID:** ${member.id}`,
+          `**Username:** ${member.user.username}`,
+          `**Display Name:** ${member.displayName}`,
+          `**Bot:** ${member.user.bot ? 'Yes' : 'No'}`
+        ].join('\n')
+      },
+      {
+        name: 'Server Information',
+        value: [
+          `**Joined:** ${time(member.joinedAt!, 'R')}`,
+          `**Nickname:** ${member.nickname ?? 'None'}`,
+          `**Roles:** ${member.roles.cache.size - 1}`
+        ].join('\n')
+      },
+      {
+        name: `Roles [${member.roles.cache.size - 1}]`,
+        value: roles || 'No roles'
+      }
+    ],
+    color: member.displayHexColor,
+    timestamp: true,
+    footer: { text: `Account created` },
+  });
+}
+```
+
+### Paginated Help System
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+import { CommandInteraction } from 'discord.js';
+
+interface Command {
+  name: string;
+  description: string;
+  usage: string;
+}
+
+function createHelpPages(commands: Command[], perPage = 5) {
+  const pages: EmbedPlusBuilder[] = [];
+  
+  for (let i = 0; i < commands.length; i += perPage) {
+    const pageCommands = commands.slice(i, i + perPage);
+    const pageNumber = Math.floor(i / perPage) + 1;
+    const totalPages = Math.ceil(commands.length / perPage);
+    
+    const embed = createEmbed({
+      title: '📚 Command Help',
+      description: 'List of available commands',
+      fields: pageCommands.map(cmd => ({
+        name: `/${cmd.name}`,
+        value: `${cmd.description}\n**Usage:** \`${cmd.usage}\``,
+        inline: false
+      })),
+      color: '#5865F2',
+      footer: { text: `Page ${pageNumber}/${totalPages}` },
+      timestamp: true
+    });
+    
+    pages.push(embed);
+  }
+  
+  return pages;
+}
+```
+
+### Status Dashboard
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+import { Client } from 'discord.js';
+
+function createStatusEmbed(client: Client<true>) {
+  const uptime = client.uptime || 0;
+  const days = Math.floor(uptime / 86400000);
+  const hours = Math.floor(uptime / 3600000) % 24;
+  const minutes = Math.floor(uptime / 60000) % 60;
+  
+  const memoryUsage = process.memoryUsage();
+  const memoryMB = (memoryUsage.heapUsed / 1024 / 1024).toFixed(2);
+  
+  return createEmbed({
+    title: '🛡️ Bot Status',
+    fields: [
+      {
+        name: 'Bot Stats',
+        value: [
+          `**Servers:** ${client.guilds.cache.size}`,
+          `**Users:** ${client.users.cache.size}`,
+          `**Channels:** ${client.channels.cache.size}`
+        ].join('\n'),
+        inline: true
+      },
+      {
+        name: 'System Stats',
+        value: [
+          `**Memory:** ${memoryMB} MB`,
+          `**Uptime:** ${days}d ${hours}h ${minutes}m`,
+          `**Ping:** ${client.ws.ping}ms`
+        ].join('\n'),
+        inline: true
+      }
+    ],
+    color: '#00FF00',
+    timestamp: true,
+    footer: { text: 'Status updated' }
+  });
+}
+```
+
+### Error Handler
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+import { ChatInputCommandInteraction } from 'discord.js';
+
+function createErrorEmbed(error: Error, command?: string) {
+  return createEmbed({
+    title: '❌ An Error Occurred',
+    description: [
+      error.message,
+      '',
+      'Please try again later or contact support if the issue persists.'
+    ],
+    fields: command ? [
+      { name: 'Command', value: `\`${command}\``, inline: true },
+      { name: 'Error Type', value: error.name, inline: true }
+    ] : [],
+    color: '#ED4245',
+    timestamp: true,
+    footer: { text: 'Error logged' }
+  });
+}
+
+// Usage in command handler
+async function handleCommand(interaction: ChatInputCommandInteraction) {
+  try {
+    // Command logic
+  } catch (error) {
+    const errorEmbed = createErrorEmbed(
+      error as Error,
+      interaction.commandName
+    );
+    
+    await interaction.reply({
+      embeds: [errorEmbed],
+      ephemeral: true
+    });
+  }
+}
+```
+
+### Leaderboard
+
+```typescript
+import { createEmbed } from '@magicyan/discord';
+import { Guild } from 'discord.js';
+
+interface LeaderboardEntry {
+  userId: string;
+  score: number;
+  rank: number;
+}
+
+async function createLeaderboardEmbed(
+  guild: Guild,
+  entries: LeaderboardEntry[],
+  title = 'Leaderboard'
+) {
+  const medals = ['🥇', '🥈', '🥉'];
+  
+  const description = await Promise.all(
+    entries.slice(0, 10).map(async (entry, index) => {
+      const user = await guild.client.users.fetch(entry.userId);
+      const medal = medals[index] ?? `**${index + 1}.**`;
+      return `${medal} ${user.tag} - **${entry.score.toLocaleString()}** points`;
+    })
+  );
+  
+  return createEmbed({
+    title: `🏆 ${title}`,
+    description: description.join('\n'),
+    color: '#FFD700',
+    timestamp: true,
+    footer: { text: 'Updated' }
+  });
+}
+```
+
+## Embed Limits
+
+Discord enforces the following limits:
+
+| Property | Limit |
+|----------|-------|
+| Title | 256 characters |
+| Description | 4096 characters |
+| Fields | 25 fields max |
+| Field Name | 256 characters |
+| Field Value | 1024 characters |
+| Footer Text | 2048 characters |
+| Author Name | 256 characters |
+| Total Characters | 6000 characters |
+
+<Warning>
+  Exceeding these limits will cause Discord API errors. Always validate your content length.
+</Warning>
+
+## Best Practices
+
+<Tip>
+  Use array descriptions for better readability when dealing with multi-line content.
+</Tip>
+
+<Note>
+  Set `timestamp: true` for automatic current timestamp, or pass a Date object for custom timestamps.
+</Note>
+
+<Tip>
+  Use the `extends` option to create a base embed template for consistent branding across your bot.
+</Tip>
+
+## API Reference
+
+### EmbedPlusBuilder Methods
+
+- `update(data)` - Update embed properties
+- `has(property)` - Check if property exists
+- `toArray()` - Convert to array with single embed
+- `toString(space?)` - Convert to JSON string
+- `toAttachment(data?, space?)` - Convert to file attachment
+- `setAsset(type, source)` - Set thumbnail or image
+- `setElementImageURL(element, url)` - Set image for specific element
+
+### EmbedPlusBuilder.fields Methods
+
+- `push(...fields)` - Add fields
+- `set(...fields)` - Replace all fields
+- `insert(index, ...fields)` - Insert at position
+- `get(nameOrIndex)` - Get field by name or index
+- `find(predicate)` - Find field with callback
+- `update(predicate, field)` - Update field
+- `delete(predicate)` - Delete field
+- `clear()` - Remove all fields
+- `map(callback)` - Map over fields
+- `toArray()` - Convert to array
+- `record` - Get as key-value record
+- `length` - Field count
